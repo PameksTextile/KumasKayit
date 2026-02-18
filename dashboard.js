@@ -1,6 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbz0L3yajjtgcmAnu2ylII1hVLHRcJXekBE2m4px30sAUX3buwMqpUQaFK9VcQZQGMq4/exec";
 
 let allFabrics = [], filteredFabrics = [], currentPage = 1, rowsPerPage = 50;
+let entryCustomersLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     const userJson = sessionStorage.getItem('user');
@@ -13,11 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
         sessionStorage.clear(); window.location.href = 'index.html';
     });
 
-    // Başlangıçta kullanıcıları getir
     fetchUsers();
 });
 
-// --- BÖLÜM GEÇİŞLERİ ---
 function showSection(name) {
     document.getElementById('section-users').classList.toggle('d-none', name !== 'users');
     document.getElementById('section-entry').classList.toggle('d-none', name !== 'entry');
@@ -31,49 +30,46 @@ function showSection(name) {
         name === 'users' ? 'Kullanıcı Yönetimi' :
         name === 'entry' ? 'Kumaş Giriş' :
         'Kumaş Bilgileri';
-
     document.getElementById('current-page-title').textContent = title;
 
     if (name === 'fabrics' && allFabrics.length === 0) loadFabrics();
     if (name === 'entry') initEntryFilters();
 }
 
-// --- LOADING ---
 function toggleLoading(show) {
     document.getElementById('loadingOverlay').classList.toggle('d-none', !show);
 }
 
-// ===============
-//  KUMAŞ GİRİŞ – ÜST FİLTRE
-// ===============
-let entryCustomersLoaded = false;
-
+// ============================
+// KUMAŞ GİRİŞ – ÜST FİLTRE + MASTER
+// ============================
 async function initEntryFilters() {
-    // Dropdownları sıfırla
     const customerSel = document.getElementById('entryCustomerSelect');
     const planSel = document.getElementById('entryPlanSelect');
     const badge = document.getElementById('entryHintBadge');
-
-    if (!customerSel || !planSel) return;
+    const tbody = document.getElementById('entryMasterTbody');
 
     if (!entryCustomersLoaded) {
         await loadEntryCustomers();
         entryCustomersLoaded = true;
     }
 
-    // Plan seçimi her girişte resetlensin (kullanıcı menü değiştirip geri gelirse)
+    // plan reset
     planSel.innerHTML = `<option value="">Plan Seçiniz</option>`;
     planSel.disabled = true;
     badge.textContent = 'Müşteri seçin';
+
+    // master reset
+    tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`;
+
+    // detail reset
+    resetEntryDetail();
 }
 
 async function loadEntryCustomers() {
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "get_customers" })
-        });
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_customers" }) });
         const result = await res.json();
         if (!result.success) throw new Error(result.message || 'Müşteri listesi alınamadı.');
 
@@ -96,20 +92,20 @@ async function onEntryCustomerChange() {
     const customer = document.getElementById('entryCustomerSelect').value;
     const planSel = document.getElementById('entryPlanSelect');
     const badge = document.getElementById('entryHintBadge');
+    const tbody = document.getElementById('entryMasterTbody');
 
     planSel.innerHTML = `<option value="">Plan Seçiniz</option>`;
     planSel.disabled = true;
+    tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`;
+    resetEntryDetail();
 
-    if (!customer) {
-        badge.textContent = 'Müşteri seçin';
-        return;
-    }
+    if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
 
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, {
             method: "POST",
-            body: JSON.stringify({ action: "get_plans_by_customer", customer: customer })
+            body: JSON.stringify({ action: "get_plans_by_customer", customer })
         });
         const result = await res.json();
         if (!result.success) throw new Error(result.message || 'Plan listesi alınamadı.');
@@ -131,16 +127,127 @@ async function onEntryCustomerChange() {
     }
 }
 
-function onEntryPlanChange() {
+async function onEntryPlanChange() {
     const customer = document.getElementById('entryCustomerSelect').value;
     const plan = document.getElementById('entryPlanSelect').value;
     const badge = document.getElementById('entryHintBadge');
+    const tbody = document.getElementById('entryMasterTbody');
+
+    resetEntryDetail();
 
     if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
-    if (!plan) { badge.textContent = 'Plan seçin'; return; }
+    if (!plan) { badge.textContent = 'Plan seçin'; tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`; return; }
 
-    badge.textContent = 'Liste hazırlanacak (sonraki adım)';
-    // Burada bir sonraki adımda: plan bazlı listeyi çekeceğiz.
+    badge.textContent = 'Liste yükleniyor...';
+    tbody.innerHTML = `<tr><td colspan="10">Yükleniyor...</td></tr>`;
+
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_plan_summary", customer, plan })
+        });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.message || 'Liste alınamadı.');
+
+        renderEntryMaster(result.data || []);
+        badge.textContent = `Toplam satır: ${result.data.length}`;
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message || 'Bilinmeyen hata' });
+        badge.textContent = 'Hata';
+        tbody.innerHTML = `<tr><td colspan="10">Hata oluştu.</td></tr>`;
+    } finally {
+        toggleLoading(false);
+    }
+}
+
+function formatNumberTR(n, decimals = 2) {
+    if (n === null || n === undefined || n === '') return '';
+    const num = Number(n);
+    if (isNaN(num)) return String(n);
+    return num.toLocaleString('tr-TR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function formatRemaining(target, incoming) {
+    const t = Number(target) || 0;
+    const g = Number(incoming) || 0;
+    const diff = t - g;
+    if (diff < 0) return `+${formatNumberTR(Math.abs(diff), 2)} fazla`;
+    return formatNumberTR(diff, 2);
+}
+
+function renderEntryMaster(rows) {
+    const tbody = document.getElementById('entryMasterTbody');
+    tbody.innerHTML = '';
+
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10">Kayıt bulunamadı.</td></tr>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.dataset.lineId = r.line_id;
+
+        const statusHtml = r.is_manual_closed
+            ? `<span class="status-badge status-aktif">Tamamlandı (Manuel)</span>`
+            : (r.status === 'Tamamlandı'
+                ? `<span class="status-badge status-aktif">Tamamlandı</span>`
+                : `<span class="status-badge status-pasif">Devam Ediyor</span>`);
+
+        tr.innerHTML = `
+          <td>${r.model || ''}</td>
+          <td>${r.kumas || ''}</td>
+          <td>${r.renk || ''}</td>
+          <td>${r.alan || ''}</td>
+          <td>${formatNumberTR(r.target_qty, 2)} ${r.unit || ''}</td>
+          <td>${formatNumberTR(r.incoming_qty, 2)} ${r.unit || ''}</td>
+          <td>${formatRemaining(r.target_qty, r.incoming_qty)} ${r.unit || ''}</td>
+          <td>${formatNumberTR(r.percent, 2)}%</td>
+          <td>${statusHtml}</td>
+          <td>
+            <button class="action-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
+            <button class="action-btn" title="Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
+            <button class="action-btn" title="Detay" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
+          </td>
+        `;
+        frag.appendChild(tr);
+    });
+
+    tbody.appendChild(frag);
+}
+
+function clearSelectedRows() {
+    const rows = document.querySelectorAll('#entryMasterTbody tr');
+    rows.forEach(r => r.classList.remove('row-selected'));
+}
+
+function resetEntryDetail() {
+    document.getElementById('entryDetailCard').classList.add('d-none');
+    document.getElementById('entryDetailHint').classList.remove('d-none');
+    const dt = document.getElementById('entryDetailTbody');
+    if (dt) dt.innerHTML = `<tr><td colspan="7">-</td></tr>`;
+    clearSelectedRows();
+}
+
+// Placeholder: 3. adımda gerçek modal+detay yapacağız
+function entryAdd(lineId) {
+    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Yeni giriş ekranını 3. adımda açacağız. line_id=${lineId}` });
+}
+function entryClose(lineId) {
+    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Kapatma işlemini 3. adımda Kapatmalar'a yazacağız. line_id=${lineId}` });
+}
+async function entryDetail(btn, lineId) {
+    // highlight
+    clearSelectedRows();
+    const tr = btn.closest('tr');
+    if (tr) tr.classList.add('row-selected');
+
+    // placeholder
+    document.getElementById('entryDetailHint').classList.add('d-none');
+    document.getElementById('entryDetailCard').classList.remove('d-none');
+    document.getElementById('entryDetailTbody').innerHTML = `<tr><td colspan="7">Detaylar 3. adımda (line_id=${lineId}).</td></tr>`;
 }
 
 // ======================
@@ -174,7 +281,6 @@ function renderUserTable(users) {
     });
 }
 
-// Modal fonksiyonları (senin mevcut koddaki gibi)
 function openCreateUserModal() {
     document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı';
     document.getElementById('inputUserId').value = '';
@@ -197,9 +303,7 @@ function openEditModal(u) {
     document.getElementById('inputStatus').value = u.status || 'aktif';
     document.getElementById('userModal').classList.remove('d-none');
 }
-function closeUserModal() {
-    document.getElementById('userModal').classList.add('d-none');
-}
+function closeUserModal() { document.getElementById('userModal').classList.add('d-none'); }
 
 document.getElementById('userForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -325,16 +429,9 @@ function renderPagination() {
     container.appendChild(next);
 }
 
-// TXT upload (mevcut)
 async function handleFileUpload(input) {
     const file = input.files && input.files[0];
     if (!file) return;
-
-    const content = await file.text();
-
-    // Bu kısım sende zaten çalışıyor kabul ediyorum; dokunmadım.
-    // Buraya senin mevcut parse + sync fonksiyonların vardıysa aynı kalabilir.
     Swal.fire({ icon: 'info', title: 'Bilgi', text: 'TXT yükleme akışı bu adımda değiştirilmedi.' });
-
     input.value = '';
 }
