@@ -3,33 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kumaş Depo Yönetim Sistemi - Giriş</title>
+    <title>Giriş - Kumaş Yönetim Sistemi</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-material-ui/material-ui.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="bg-light">
 
-    <div class="login-container">
-        <div class="login-header">
-            <h2>Kumaş Depo Yönetim Sistemi</h2>
-            <h3>Personel Giriş Ekranı</h3>
-        </div>
-        
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">Kullanıcı Adı</label>
-                <input type="text" id="username" name="username" required placeholder="Kullanıcı adınızı girin">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Şifre</label>
-                <input type="password" id="password" name="password" required placeholder="Şifrenizi girin">
-            </div>
-            
-            <button type="submit" id="loginBtn">Giriş Yap</button>
-            <p id="message" class="message"></p>
-        </form>
+    <div id="loadingOverlay" class="loading-overlay d-none">
+        <div class="spinner"></div>
+        <p>İşlem yapılıyor, lütfen bekleyin...</p>
     </div>
 
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="icon-circle">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h2>Hoş Geldiniz</h2>
+                <p>Kumaş Depo Yönetim Sistemi</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" placeholder="Örn: ahmet123" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">Şifre</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" placeholder="••••••" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    <span>Giriş Yap</span> <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>&copy; 2026 Koçyiğit Fotoğraf Atölyesi</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="app.js"></script>
 </body>
 </html>
