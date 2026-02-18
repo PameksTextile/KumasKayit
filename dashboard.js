@@ -44,7 +44,6 @@ function toggleLoading(show) {
 // KUMAŞ GİRİŞ – ÜST FİLTRE + MASTER
 // ============================
 async function initEntryFilters() {
-    const customerSel = document.getElementById('entryCustomerSelect');
     const planSel = document.getElementById('entryPlanSelect');
     const badge = document.getElementById('entryHintBadge');
     const tbody = document.getElementById('entryMasterTbody');
@@ -54,15 +53,12 @@ async function initEntryFilters() {
         entryCustomersLoaded = true;
     }
 
-    // plan reset
     planSel.innerHTML = `<option value="">Plan Seçiniz</option>`;
     planSel.disabled = true;
     badge.textContent = 'Müşteri seçin';
 
-    // master reset
-    tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
 
-    // detail reset
     resetEntryDetail();
 }
 
@@ -96,7 +92,7 @@ async function onEntryCustomerChange() {
 
     planSel.innerHTML = `<option value="">Plan Seçiniz</option>`;
     planSel.disabled = true;
-    tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
     resetEntryDetail();
 
     if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
@@ -136,10 +132,10 @@ async function onEntryPlanChange() {
     resetEntryDetail();
 
     if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
-    if (!plan) { badge.textContent = 'Plan seçin'; tbody.innerHTML = `<tr><td colspan="10">Plan seçiniz.</td></tr>`; return; }
+    if (!plan) { badge.textContent = 'Plan seçin'; tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`; return; }
 
     badge.textContent = 'Liste yükleniyor...';
-    tbody.innerHTML = `<tr><td colspan="10">Yükleniyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12">Yükleniyor...</td></tr>`;
 
     toggleLoading(true);
     try {
@@ -155,7 +151,7 @@ async function onEntryPlanChange() {
     } catch (e) {
         Swal.fire({ icon: 'error', title: 'Hata', text: e.message || 'Bilinmeyen hata' });
         badge.textContent = 'Hata';
-        tbody.innerHTML = `<tr><td colspan="10">Hata oluştu.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12">Hata oluştu.</td></tr>`;
     } finally {
         toggleLoading(false);
     }
@@ -181,7 +177,7 @@ function renderEntryMaster(rows) {
     tbody.innerHTML = '';
 
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10">Kayıt bulunamadı.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12">Kayıt bulunamadı.</td></tr>`;
         return;
     }
 
@@ -196,11 +192,16 @@ function renderEntryMaster(rows) {
                 ? `<span class="status-badge status-aktif">Tamamlandı</span>`
                 : `<span class="status-badge status-pasif">Devam Ediyor</span>`);
 
+        const desiredEnText = (r.desired_width === null || r.desired_width === undefined || r.desired_width === '') ? '' : String(r.desired_width);
+        const desiredGsmText = (r.desired_gsm === null || r.desired_gsm === undefined || r.desired_gsm === '') ? '' : String(r.desired_gsm);
+
         tr.innerHTML = `
           <td>${r.model || ''}</td>
           <td>${r.kumas || ''}</td>
           <td>${r.renk || ''}</td>
           <td>${r.alan || ''}</td>
+          <td>${desiredEnText}</td>
+          <td>${desiredGsmText}</td>
           <td>${formatNumberTR(r.target_qty, 2)} ${r.unit || ''}</td>
           <td>${formatNumberTR(r.incoming_qty, 2)} ${r.unit || ''}</td>
           <td>${formatRemaining(r.target_qty, r.incoming_qty)} ${r.unit || ''}</td>
@@ -239,12 +240,10 @@ function entryClose(lineId) {
     Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Kapatma işlemini 3. adımda Kapatmalar'a yazacağız. line_id=${lineId}` });
 }
 async function entryDetail(btn, lineId) {
-    // highlight
     clearSelectedRows();
     const tr = btn.closest('tr');
     if (tr) tr.classList.add('row-selected');
 
-    // placeholder
     document.getElementById('entryDetailHint').classList.add('d-none');
     document.getElementById('entryDetailCard').classList.remove('d-none');
     document.getElementById('entryDetailTbody').innerHTML = `<tr><td colspan="7">Detaylar 3. adımda (line_id=${lineId}).</td></tr>`;
