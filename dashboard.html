@@ -3,128 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yönetim Paneli - Pameks Kumaş</title>
-    
+    <title>Pameks Kumaş Yönetim</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-material-ui/material-ui.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div id="loadingOverlay" class="loading-overlay d-none">
-        <div class="spinner"></div>
-    </div>
+    <div id="loadingOverlay" class="loading-overlay d-none"><div class="spinner"></div></div>
 
     <div class="dashboard-container">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <i class="fas fa-layer-group"></i>
-                <span>Pameks Kumaş</span>
-            </div>
-            
+        <aside class="sidebar">
+            <div class="sidebar-brand"><i class="fas fa-layer-group"></i> <span>Pameks Kumaş</span></div>
             <nav class="sidebar-menu">
                 <ul>
-                    <li><a href="#" class="active"><i class="fas fa-users-cog"></i> <span>Kullanıcı Yönetimi</span></a></li>
+                    <li><a href="#" id="menu-users" onclick="showSection('users')"><i class="fas fa-users-cog"></i> <span>Kullanıcı Yönetimi</span></a></li>
+                    <li><a href="#" id="menu-fabrics" onclick="showSection('fabrics')"><i class="fas fa-scroll"></i> <span>Kumaş Bilgileri</span></a></li>
                 </ul>
             </nav>
-
-            <div class="sidebar-footer">
-                <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Çıkış Yap</span></button>
-            </div>
+            <div class="sidebar-footer"><button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Çıkış Yap</span></button></div>
         </aside>
 
         <main class="main-content">
             <header class="topbar">
-                <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
-                <div class="page-title"><h3>Kullanıcı Yönetimi</h3></div>
-                <div class="user-profile">
-                    <span class="user-name" id="displayFullName">...</span>
-                </div>
+                <div class="page-title"><h3 id="current-page-title">Kullanıcı Yönetimi</h3></div>
+                <div class="user-profile"><span class="user-name" id="displayFullName">...</span></div>
             </header>
 
             <div class="content-wrapper">
-                
-                <div class="toolbar">
-                    <button class="btn-primary" onclick="openUserModal()">
-                        <i class="fas fa-plus"></i> Yeni Kullanıcı Ekle
-                    </button>
-                    <button class="btn-secondary" onclick="fetchUsers()">
-                        <i class="fas fa-sync"></i> Yenile
-                    </button>
+                <div id="section-users">
+                    <div class="toolbar">
+                        <button class="btn-primary" onclick="openUserModal()"><i class="fas fa-plus"></i> Yeni Kullanıcı</button>
+                    </div>
+                    <div class="card table-card">
+                        <table class="data-table">
+                            <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Mail</th><th>Rol</th><th>Durum</th><th>İşlemler</th></tr></thead>
+                            <tbody id="userTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="card table-card">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ad Soyad</th>
-                                <th>Kullanıcı Adı</th>
-                                <th>Mail</th>
-                                <th>Rol</th>
-                                <th>Durum</th>
-                                <th>İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userTableBody">
-                            </tbody>
-                    </table>
+                <div id="section-fabrics" class="d-none">
+                    <div class="card">
+                        <div class="card-header-row">
+                            <div class="search-container">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="fabricSearch" placeholder="Kumaş Kodu veya Adı Filtrele..." onkeyup="filterFabrics()">
+                            </div>
+                            <div class="action-buttons">
+                                <input type="file" id="fabricFileInput" accept=".txt" style="display: none;" onchange="handleFileUpload(this)">
+                                <button class="btn-primary" onclick="document.getElementById('fabricFileInput').click()"><i class="fas fa-file-upload"></i> ERP TXT Yükle</button>
+                            </div>
+                        </div>
+                        <div class="summary-bar"><span id="totalFabricsBadge" class="badge">Yükleniyor...</span></div>
+                    </div>
+                    <div class="card table-card mt-3">
+                        <table class="data-table">
+                            <thead><tr><th>Kod</th><th>Kumaş Tanımı</th><th>En</th><th>Gramaj</th><th>Birim</th></tr></thead>
+                            <tbody id="fabricTableBody"></tbody>
+                        </table>
+                        <div class="pagination-controls">
+                            <button class="btn-secondary" onclick="prevPage()"><i class="fas fa-chevron-left"></i></button>
+                            <span id="pageIndicator">Sayfa 1</span>
+                            <button class="btn-secondary" onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
                 </div>
-
             </div>
         </main>
     </div>
 
     <div id="userModal" class="modal d-none">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Yeni Kullanıcı</h3>
-                <span class="close-modal" onclick="closeUserModal()">&times;</span>
-            </div>
+            <div class="modal-header"><h3 id="modalTitle">Kullanıcı</h3><span class="close-modal" onclick="closeUserModal()">&times;</span></div>
             <form id="userForm">
-                <input type="hidden" id="editUserId"> <div class="form-row">
-                    <div class="form-group">
-                        <label>Ad Soyad</label>
-                        <input type="text" id="inputName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Mail Adresi</label>
-                        <input type="email" id="inputMail" required>
-                    </div>
-                </div>
-
+                <input type="hidden" id="editUserId">
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Kullanıcı Adı</label>
-                        <input type="text" id="inputUsername" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Şifre</label>
-                        <input type="text" id="inputPassword" required placeholder="Şifre belirleyin">
-                    </div>
+                    <div class="form-group"><label>Ad Soyad</label><input type="text" id="inputName" required></div>
+                    <div class="form-group"><label>Mail</label><input type="email" id="inputMail" required></div>
                 </div>
-
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Rol</label>
-                        <select id="inputRole">
-                            <option value="user">Personel (User)</option>
-                            <option value="admin">Yönetici (Admin)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Durum</label>
-                        <select id="inputStatus">
-                            <option value="aktif">Aktif</option>
-                            <option value="pasif">Pasif (Giriş Engelli)</option>
-                        </select>
-                    </div>
+                    <div class="form-group"><label>Kullanıcı Adı</label><input type="text" id="inputUsername" required></div>
+                    <div class="form-group"><label>Şifre</label><input type="text" id="inputPassword" required></div>
                 </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeUserModal()">İptal</button>
-                    <button type="submit" class="btn-primary">Kaydet</button>
+                <div class="form-row">
+                    <div class="form-group"><label>Rol</label><select id="inputRole"><option value="user">Personel</option><option value="admin">Yönetici</option></select></div>
+                    <div class="form-group"><label>Durum</label><select id="inputStatus"><option value="aktif">Aktif</option><option value="pasif">Pasif</option></select></div>
                 </div>
+                <div class="modal-footer"><button type="button" class="btn-secondary" onclick="closeUserModal()">İptal</button><button type="submit" class="btn-primary">Kaydet</button></div>
             </form>
         </div>
     </div>
