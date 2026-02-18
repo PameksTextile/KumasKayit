@@ -1,234 +1,174 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbz0L3yajjtgcmAnu2ylII1hVLHRcJXekBE2m4px30sAUX3buwMqpUQaFK9VcQZQGMq4/exec";
 
-// --- SAYFA YÜKLENİRKEN ---
-document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Oturum Kontrolü
+let allFabrics = [], filteredFabrics = [], currentPage = 1, rowsPerPage = 50;
+
+document.addEventListener('DOMContentLoaded', function() {
     const userJson = sessionStorage.getItem('user');
     if (!userJson) { window.location.href = 'index.html'; return; }
     
     const user = JSON.parse(userJson);
     document.getElementById('displayFullName').textContent = user.full_name;
+    
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        sessionStorage.clear(); window.location.href = 'index.html';
+    });
 
-    // 2. Sidebar Ayarları
-    setupSidebar();
-
-    // 3. Veriyi Getir (Hızlı)
-    await loadUsers();
+    // Başlangıçta kullanıcıları getir
+    fetchUsers();
 });
 
-// --- MENÜ (SIDEBAR) AYARLARI ---
-function setupSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const overlay = document.getElementById('sidebarOverlay') || createOverlay();
-
-    if(sidebarToggle) {
-        sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        });
-    }
-
-    if(overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        sessionStorage.clear();
-        window.location.href = 'index.html';
-    });
-}
-
-function createOverlay() {
-    const div = document.createElement('div');
-    div.id = 'sidebarOverlay';
-    div.className = 'sidebar-overlay';
-    document.body.appendChild(div);
-    return div;
-}
-
-// --- KULLANICI LİSTELEME (API) ---
-async function loadUsers(forceRefresh = false) {
-    const tbody = document.getElementById('userTableBody');
+// --- BÖLÜM GEÇİŞLERİ ---
+function showSection(name) {
+    document.getElementById('section-users').classList.toggle('d-none', name !== 'users');
+    document.getElementById('section-fabrics').classList.toggle('d-none', name !== 'fabrics');
     
-    // Önbellek kontrolü (Hız için)
-    const cachedUsers = sessionStorage.getItem('cached_users');
-    if (!forceRefresh && cachedUsers) {
-        renderTable(JSON.parse(cachedUsers));
-        return;
-    }
-
-    // Sunucudan çekme
-    toggleLoading(true);
-
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "get_users" })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            sessionStorage.setItem('cached_users', JSON.stringify(result.data));
-            renderTable(result.data);
-        } else {
-            Swal.fire("Hata", result.message, "error");
-        }
-    } catch (error) {
-        console.error(error);
-        Swal.fire("Hata", "Sunucuya bağlanılamadı.", "error");
-    } finally {
-        toggleLoading(false); // Spinner kesinlikle kapanacak
-    }
+    document.getElementById('menu-users').classList.toggle('active', name === 'users');
+    document.getElementById('menu-fabrics').classList.toggle('active', name === 'fabrics');
+    
+    document.getElementById('current-page-title').textContent = name === 'users' ? 'Kullanıcı Yönetimi' : 'Kumaş Bilgileri';
+    
+    if(name === 'fabrics' && allFabrics.length === 0) loadFabrics();
 }
 
-// --- TABLO OLUŞTURMA ---
-function renderTable(users) {
+// --- KULLANICI YÖNETİMİ FONKSİYONLARI ---
+async function fetchUsers() {
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_users" })});
+        const result = await res.json();
+        if (result.success) renderUserTable(result.data);
+    } finally { toggleLoading(false); }
+}
+
+function renderUserTable(users) {
     const tbody = document.getElementById('userTableBody');
     tbody.innerHTML = "";
-
-    if (!users || users.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Kayıt bulunamadı.</td></tr>";
-        return;
-    }
-
-    users.forEach(user => {
+    users.forEach(u => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><div style="font-weight:600;">${user.full_name}</div></td>
-            <td>${user.username}</td>
-            <td>${user.mail || '-'}</td>
-            <td><span class="badge">${user.role === 'admin' ? 'YÖNETİCİ' : 'PERSONEL'}</span></td>
-            <td><span class="status-badge status-${user.status}">${user.status.toUpperCase()}</span></td>
+            <td>${u.full_name}</td>
+            <td>${u.username}</td>
+            <td>${u.mail}</td>
+            <td><span class="badge">${u.role.toUpperCase()}</span></td>
+            <td><span class="status-badge status-${u.status}">${u.status.toUpperCase()}</span></td>
             <td>
-                <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(user)})'>
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn delete-btn" onclick="deleteUser('${user.user_id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
+                <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})'><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')"><i class="fas fa-trash"></i></button>
+            </td>`;
         tbody.appendChild(tr);
     });
 }
 
-// --- KULLANICI EKLEME / GÜNCELLEME ---
-const userForm = document.getElementById('userForm');
-if(userForm) {
-    userForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            user_id: document.getElementById('editUserId').value,
-            full_name: document.getElementById('inputName').value,
-            mail: document.getElementById('inputMail').value,
-            username: document.getElementById('inputUsername').value,
-            password: document.getElementById('inputPassword').value,
-            role: document.getElementById('inputRole').value,
-            status: document.getElementById('inputStatus').value
-        };
+document.getElementById('userForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = {
+        user_id: document.getElementById('editUserId').value,
+        full_name: document.getElementById('inputName').value,
+        mail: document.getElementById('inputMail').value,
+        username: document.getElementById('inputUsername').value,
+        password: document.getElementById('inputPassword').value,
+        role: document.getElementById('inputRole').value,
+        status: document.getElementById('inputStatus').value
+    };
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data })});
+        const result = await res.json();
+        if(result.success) { Swal.fire('Başarılı', result.message, 'success'); closeUserModal(); fetchUsers(); }
+    } finally { toggleLoading(false); }
+});
 
-        closeUserModal();
-        toggleLoading(true);
-
-        try {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "save_user", data: formData })
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Başarılı',
-                    text: result.message,
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-                loadUsers(true); // Listeyi tazelemek için zorla yenile
-            } else {
-                Swal.fire("Hata", result.message, "error");
-            }
-        } catch (error) {
-            Swal.fire("Hata", "İşlem başarısız oldu.", "error");
-        } finally {
-            toggleLoading(false);
-        }
-    });
-}
-
-// --- KULLANICI SİLME ---
 function deleteUser(id) {
-    Swal.fire({
-        title: 'Silmek istediğine emin misin?',
-        text: "Bu kullanıcı pasife alınacak!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Evet, Sil',
-        cancelButtonText: 'İptal'
-    }).then(async (result) => {
-        if (result.isConfirmed) {
+    Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true }).then(async (r) => {
+        if(r.isConfirmed) {
             toggleLoading(true);
             try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "delete_user", user_id: id })
-                });
-                const res = await response.json();
-                
-                if (res.success) {
-                    Swal.fire("Silindi!", res.message, "success");
-                    loadUsers(true);
-                } else {
-                    Swal.fire("Hata", res.message, "error");
-                }
-            } catch (error) {
-                Swal.fire("Hata", "Silme işlemi başarısız.", "error");
-            } finally {
-                toggleLoading(false);
-            }
+                const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_user", user_id: id })});
+                const result = await res.json();
+                if(result.success) fetchUsers();
+            } finally { toggleLoading(false); }
         }
     });
 }
 
-// --- YARDIMCI MODAL FONKSİYONLARI ---
-const modal = document.getElementById('userModal');
-
-function openUserModal() {
-    document.getElementById('userForm').reset();
-    document.getElementById('editUserId').value = "";
-    document.getElementById('modalTitle').textContent = "Yeni Kullanıcı Ekle";
-    modal.classList.remove('d-none');
+// --- KUMAŞ YÖNETİMİ FONKSİYONLARI ---
+async function loadFabrics() {
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_fabric_catalog" })});
+        const result = await res.json();
+        if (result.success) { allFabrics = result.data; filteredFabrics = allFabrics; updateFabricTable(); }
+    } finally { toggleLoading(false); }
 }
 
-function openEditModal(user) {
-    document.getElementById('editUserId').value = user.user_id;
-    document.getElementById('inputName').value = user.full_name;
-    document.getElementById('inputMail').value = user.mail || "";
-    document.getElementById('inputUsername').value = user.username;
-    document.getElementById('inputPassword').value = user.password;
-    document.getElementById('inputRole').value = user.role;
-    document.getElementById('inputStatus').value = user.status;
-    
+function updateFabricTable() {
+    const tbody = document.getElementById('fabricTableBody');
+    tbody.innerHTML = "";
+    document.getElementById('totalFabricsBadge').textContent = `${filteredFabrics.length} Kayıt`;
+    const start = (currentPage - 1) * rowsPerPage;
+    const items = filteredFabrics.slice(start, start + rowsPerPage);
+    items.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><span class="badge">${f.code}</span></td><td><b>${f.name}</b></td><td>${f.width}</td><td>${f.gsm}</td><td>${f.unit}</td>`;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('pageIndicator').textContent = `Sayfa ${currentPage} / ${Math.ceil(filteredFabrics.length / rowsPerPage) || 1}`;
+}
+
+function filterFabrics() {
+    const q = document.getElementById('fabricSearch').value.toLowerCase();
+    filteredFabrics = allFabrics.filter(f => f.code.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
+    currentPage = 1; updateFabricTable();
+}
+
+function handleFileUpload(input) {
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        const data = [];
+        lines.forEach(l => {
+            const p = l.split(';');
+            if(p.length >= 2) data.push({ code: p[0].trim(), name: p[1].trim(), width: p[2]||"", gsm: p[3]||"", unit: p[4]||"" });
+        });
+        Swal.fire({ title: 'Onay', text: `${data.length} kumaş karşılaştırılsın mı?`, icon: 'question', showCancelButton: true }).then(r => {
+            if(r.isConfirmed) syncWithBackend(data);
+        });
+    };
+    reader.readAsText(file);
+}
+
+async function syncWithBackend(data) {
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "sync_fabrics", fabrics: data })});
+        const result = await res.json();
+        if(result.success) {
+            Swal.fire('Bitti', `Eklendi: ${result.data.added}, Güncellendi: ${result.data.updated}, Aynı: ${result.data.same}`, 'success');
+            loadFabrics();
+        }
+    } finally { toggleLoading(false); document.getElementById('fabricFileInput').value = ""; }
+}
+
+// --- MODAL & YARDIMCILAR ---
+function openUserModal() { 
+    document.getElementById('userForm').reset(); 
+    document.getElementById('editUserId').value = ""; 
+    document.getElementById('modalTitle').textContent = "Yeni Kullanıcı";
+    document.getElementById('userModal').classList.remove('d-none'); 
+}
+function openEditModal(u) {
+    document.getElementById('editUserId').value = u.user_id;
+    document.getElementById('inputName').value = u.full_name;
+    document.getElementById('inputMail').value = u.mail;
+    document.getElementById('inputUsername').value = u.username;
+    document.getElementById('inputPassword').value = u.password;
+    document.getElementById('inputRole').value = u.role;
+    document.getElementById('inputStatus').value = u.status;
     document.getElementById('modalTitle').textContent = "Kullanıcı Düzenle";
-    modal.classList.remove('d-none');
+    document.getElementById('userModal').classList.remove('d-none');
 }
-
-function closeUserModal() {
-    modal.classList.add('d-none');
-}
-
-function toggleLoading(show) {
-    const overlay = document.getElementById('loadingOverlay');
-    if (!overlay) return;
-    if (show) overlay.classList.remove('d-none');
-    else overlay.classList.add('d-none');
-}
+function closeUserModal() { document.getElementById('userModal').classList.add('d-none'); }
+function toggleLoading(s) { document.getElementById('loadingOverlay').classList.toggle('d-none', !s); }
+function nextPage() { if ((currentPage * rowsPerPage) < filteredFabrics.length) { currentPage++; updateFabricTable(); } }
+function prevPage() { if (currentPage > 1) { currentPage--; updateFabricTable(); } }
