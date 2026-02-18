@@ -17,7 +17,7 @@
             <div class="sidebar-brand"><i class="fas fa-layer-group"></i> <span>Pameks Kumaş</span></div>
             <nav class="sidebar-menu">
                 <ul>
-                    <li><a href="#" id="menu-users" onclick="showSection('users')"><i class="fas fa-users-cog"></i> <span>Kullanıcı Yönetimi</span></a></li>
+                    <li><a href="#" id="menu-users" class="active" onclick="showSection('users')"><i class="fas fa-users-cog"></i> <span>Kullanıcı Yönetimi</span></a></li>
                     <li><a href="#" id="menu-fabrics" onclick="showSection('fabrics')"><i class="fas fa-scroll"></i> <span>Kumaş Bilgileri</span></a></li>
                 </ul>
             </nav>
@@ -32,9 +32,7 @@
 
             <div class="content-wrapper">
                 <div id="section-users">
-                    <div class="toolbar">
-                        <button class="btn-primary" onclick="openUserModal()"><i class="fas fa-plus"></i> Yeni Kullanıcı</button>
-                    </div>
+                    <div class="toolbar"><button class="btn-primary" onclick="openUserModal()"><i class="fas fa-plus"></i> Yeni Kullanıcı</button></div>
                     <div class="card table-card">
                         <table class="data-table">
                             <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Mail</th><th>Rol</th><th>Durum</th><th>İşlemler</th></tr></thead>
