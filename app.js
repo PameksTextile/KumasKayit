@@ -1,5 +1,4 @@
-// Google Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycby940TGnBM18mJG5qoSprAfePXLnlnUKY6lY5wIDexPUX3lVdUFZS8YkYenJEwBFMUB/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxF0I9Du0TacfepOWbTpUlvL_u3feaLt4Qw75C6Gsl2gaAb2WDFtuBDi7A15tX2qc86/exec";
 
 const loginForm = document.getElementById('loginForm');
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -11,24 +10,13 @@ if (loginForm) {
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value.trim();
 
-        if (!username || !password) {
-            Swal.fire({ icon: 'warning', title: 'Uyarı', text: 'Lütfen kullanıcı adı ve şifre giriniz.' });
-            return;
-        }
-
         toggleLoading(true);
 
         try {
-            /**
-             * CORS Çözümü: 
-             * Content-Type: application/json başlığı tarayıcının OPTIONS isteği (preflight) atmasına neden olur.
-             * Google Apps Script bunu desteklemediği için hata verir.
-             * Çözüm için veriyi düz metin olarak gönderiyoruz ve redirect: "follow" kullanıyoruz.
-             */
+            // CORS ÇÖZÜMÜ: Headers kısmını tamamen kaldırdık. 
+            // Bu sayede tarayıcı isteği "Simple POST" olarak algılar ve OPTIONS kontrolü yapmaz.
             const response = await fetch(API_URL, {
                 method: "POST",
-                mode: "cors", // CORS modunda çalıştır
-                redirect: "follow", // Google'ın 302 yönlendirmelerini takip et
                 body: JSON.stringify({ 
                     action: "login", 
                     username: username, 
@@ -36,51 +24,29 @@ if (loginForm) {
                 })
             });
 
-            // Yanıtın JSON olup olmadığını kontrol ederek oku
             const result = await response.json();
             
             if (result.success) {
-                // Kullanıcı bilgilerini sakla
                 sessionStorage.setItem('user', JSON.stringify(result.data));
-                
-                const Toast = Swal.mixin({ 
-                    toast: true, 
-                    position: 'top', 
-                    showConfirmButton: false, 
-                    timer: 1000 
-                });
-                Toast.fire({ icon: 'success', title: 'Giriş Başarılı' });
-                
-                // Dashboard'a yönlendir
-                setTimeout(() => { 
-                    window.location.href = "dashboard.html"; 
-                }, 800);
+                window.location.href = "dashboard.html";
             } else {
-                toggleLoading(false); 
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Giriş Başarısız', 
-                    text: result.message || 'Kullanıcı adı veya şifre hatalı.' 
-                });
+                toggleLoading(false);
+                Swal.fire({ icon: 'error', title: 'Hata', text: result.message });
             }
         } catch (error) {
-            console.error("Fetch Hatası:", error);
+            console.error("Detaylı Hata:", error);
             toggleLoading(false);
             Swal.fire({ 
                 icon: 'error', 
                 title: 'Bağlantı Hatası', 
-                text: 'Sunucuya ulaşılamadı. Lütfen internet bağlantınızı ve Apps Script yayınlama ayarlarını kontrol edin.' 
+                text: 'İstek engellendi. Lütfen Apps Script üzerinden "Herkes" (Anyone) seçeneğiyle YENİ bir dağıtım yapın.' 
             });
         }
     });
 }
 
-/**
- * Yükleme ekranını göster/gizle
- * @param {boolean} show 
- */
 function toggleLoading(show) {
-    if (!loadingOverlay) return;
-    if (show) loadingOverlay.classList.remove('d-none');
-    else loadingOverlay.classList.add('d-none');
+    if (loadingOverlay) {
+        loadingOverlay.classList.toggle('d-none', !show);
+    }
 }
