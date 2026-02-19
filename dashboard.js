@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Geri Açma ve Manuel Kapatma Entegre Sürüm)
+ * dashboard.js - Frontend Uygulama Mantığı (7 Alanlı Yeni Giriş & Geri Açma Entegre Sürüm)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -164,12 +164,9 @@ function renderEntryMaster(rows) {
         tr.dataset.lineId = r.line_id;
         const diff = r.target_qty - r.incoming_qty;
         
-        // Statü Renkleri
-        let statusClr = 'status-pasif'; // Varsayılan: Devam Ediyor (Gri/Kırmızı)
-        if (r.status === 'Tamamlandı') statusClr = 'status-aktif'; // Yeşil
-        if (r.status === 'Manuel Kapatıldı') statusClr = 'status-aktif'; // Senin tercihinle yeşil veya ayrı bir stil
+        let statusClr = 'status-pasif';
+        if (r.status === 'Tamamlandı' || r.status === 'Manuel Kapatıldı') statusClr = 'status-aktif';
 
-        // Statüye Göre Buton Belirleme
         let closeBtn = '';
         if (r.status === 'Manuel Kapatıldı') {
             closeBtn = `<button class="action-btn edit-btn" title="Geri Aç" onclick="entryReopen('${r.line_id}')"><i class="fas fa-undo"></i></button>`;
@@ -260,6 +257,12 @@ async function entryDetail(btn, lineId) {
 function entryAdd(lineId) {
     document.getElementById('entryForm').reset();
     document.getElementById('entryLineId').value = lineId;
+    
+    // Varsayılan tarihi bugün olarak ayarla (YYYY-AA-GG formatı input[type=date] için)
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('inGelisTarihi');
+    if(dateInput) dateInput.value = today;
+
     document.getElementById('entryModal').classList.remove('d-none');
 }
 
@@ -267,19 +270,21 @@ function closeEntryModal() {
     document.getElementById('entryModal').classList.add('d-none');
 }
 
-// Yeni Giriş Formu Listener
+// Yeni Giriş Formu Listener (GÜNCELLENDİ: 7 Teknik Alan)
 const entryForm = document.getElementById('entryForm');
 if(entryForm) {
     entryForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const data = {
             line_id: document.getElementById('entryLineId').value,
+            gelis_tarihi: document.getElementById('inGelisTarihi').value,
             parti_no: document.getElementById('inPartiNo').value,
             top_sayisi: document.getElementById('inTopSayisi').value,
             gelen_miktar: document.getElementById('inGelenMiktar').value,
             birim: document.getElementById('inBirim').value,
             gelen_en: document.getElementById('inGelenEn').value,
             gelen_gramaj: document.getElementById('inGelenGramaj').value,
+            kullanilabilir_en: document.getElementById('inKullanilabilirEn').value,
             lokasyon: document.getElementById('inLokasyon').value
         };
         toggleLoading(true);
@@ -287,7 +292,7 @@ if(entryForm) {
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_entry", data }) });
             const result = await res.json();
             if (result.success) {
-                Swal.fire('Başarılı', 'Kayıt eklendi.', 'success');
+                Swal.fire('Başarılı', 'Yeni kumaş kaydı eklendi.', 'success');
                 closeEntryModal();
                 await onEntryPlanChange();
             }
