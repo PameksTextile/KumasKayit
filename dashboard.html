@@ -69,16 +69,14 @@
                     </div>
                     <div class="entry-filter-row">
                         <div class="filter-group">
-                            <label for="entryCustomerSelect">Müşteri</label>
-                            <select id="entryCustomerSelect" onchange="onEntryCustomerChange()">
-                                <option value="">Müşteri Seçiniz</option>
-                            </select>
+                            <label for="entryCustomerInput">Müşteri (Arayın)</label>
+                            <input list="customerList" id="entryCustomerInput" placeholder="Müşteri adı yazın..." onchange="onEntryCustomerChange()" class="search-input">
+                            <datalist id="customerList"></datalist>
                         </div>
                         <div class="filter-group">
-                            <label for="entryPlanSelect">Plan</label>
-                            <select id="entryPlanSelect" onchange="onEntryPlanChange()" disabled>
-                                <option value="">Plan Seçiniz</option>
-                            </select>
+                            <label for="entryPlanInput">Plan (Arayın)</label>
+                            <input list="planList" id="entryPlanInput" placeholder="Plan no yazın..." onchange="onEntryPlanChange()" disabled class="search-input">
+                            <datalist id="planList"></datalist>
                         </div>
                     </div>
                 </div>
@@ -102,7 +100,7 @@
                             </tr>
                         </thead>
                         <tbody id="entryMasterTbody">
-                            <tr><td colspan="12">Plan seçiniz.</td></tr>
+                            <tr><td colspan="12">Müşteri ve Plan seçiniz.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -110,7 +108,7 @@
                 <div class="card mt-3">
                     <div class="badge">Gelen Kumaş Hareketleri</div>
                     <div style="margin-top:10px;color:#6b7280;font-size:13px;" id="entryDetailHint">
-                        Detay butonuna basınca bu bölüm seçilen kumaşın hareketlerini gösterecek.
+                        Detay butonuna basınca bu bölüm seçilen kumaşın tüm hareketlerini listeleyecektir.
                     </div>
                     <div class="card table-card mt-3 d-none" id="entryDetailCard">
                         <table class="data-table">
@@ -173,51 +171,29 @@
         </main>
     </div>
 
-    <div id="userModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2000;">
-        <div class="card" style="width:520px;max-width:95vw;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div style="font-weight:800;" id="userModalTitle">Kullanıcı</div>
+    <div id="userModal" class="modal d-none">
+        <div class="card modal-content" style="width:520px;">
+            <div class="modal-header">
+                <div style="font-weight:800;" id="userModalTitle">Kullanıcı İşlemleri</div>
                 <button class="action-btn" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="userForm">
                 <input type="hidden" id="inputUserId">
-                <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <div class="form-group" style="flex:1;min-width:220px;">
-                        <label>Ad Soyad</label>
-                        <input id="inputFullName" type="text" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group" style="flex:1;min-width:220px;">
-                        <label>Kullanıcı Adı</label>
-                        <input id="inputUsername" type="text" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                </div>
-                <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-                    <div class="form-group" style="flex:1;min-width:220px;">
-                        <label>Şifre</label>
-                        <input id="inputPassword" type="text" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group" style="flex:1;min-width:220px;">
-                        <label>Mail</label>
-                        <input id="inputMail" type="email" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                </div>
-                <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-                    <div class="form-group" style="flex:1;min-width:220px;">
+                <div class="form-grid">
+                    <div class="form-group"><label>Ad Soyad</label><input id="inputFullName" type="text" required></div>
+                    <div class="form-group"><label>Kullanıcı Adı</label><input id="inputUsername" type="text" required></div>
+                    <div class="form-group"><label>Şifre</label><input id="inputPassword" type="text" required></div>
+                    <div class="form-group"><label>Mail</label><input id="inputMail" type="email"></div>
+                    <div class="form-group">
                         <label>Rol</label>
-                        <select id="inputRole" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                            <option value="user">Personel</option>
-                            <option value="admin">Yönetici</option>
-                        </select>
+                        <select id="inputRole"><option value="user">Personel</option><option value="admin">Yönetici</option></select>
                     </div>
-                    <div class="form-group" style="flex:1;min-width:220px;">
+                    <div class="form-group">
                         <label>Durum</label>
-                        <select id="inputStatus" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                            <option value="aktif">Aktif</option>
-                            <option value="pasif">Pasif</option>
-                        </select>
+                        <select id="inputStatus"><option value="aktif">Aktif</option><option value="pasif">Pasif</option></select>
                     </div>
                 </div>
-                <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
+                <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeUserModal()">İptal</button>
                     <button type="submit" class="btn-primary">Kaydet</button>
                 </div>
@@ -225,49 +201,25 @@
         </div>
     </div>
 
-    <div id="entryModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2050;">
-        <div class="card" style="width:580px;max-width:95vw;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <div id="entryModal" class="modal d-none">
+        <div class="card modal-content" style="width:580px;">
+            <div class="modal-header">
                 <div style="font-weight:800;">Yeni Kumaş Girişi</div>
                 <button class="action-btn" onclick="closeEntryModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="entryForm">
                 <input type="hidden" id="entryLineId">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Geliş Tarihi</label>
-                        <input type="date" id="inGelisTarihi" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Parti No</label>
-                        <input type="text" id="inPartiNo" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Top Sayısı</label>
-                        <input type="number" id="inTopSayisi" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen Miktar</label>
-                        <input type="number" step="0.01" id="inGelenMiktar" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen En (cm)</label>
-                        <input type="number" step="0.1" id="inGelenEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen Gramaj (gr/m²)</label>
-                        <input type="number" step="0.1" id="inGelenGramaj" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label style="font-size:12px; font-weight:700;">Kullanılabilir En</label>
-                        <input type="number" step="0.1" id="inKullanilabilirEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label style="font-size:12px; font-weight:700;">Kumaş Lokasyonu</label>
-                        <input type="text" id="inLokasyon" placeholder="Örn: Depo A-1" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
+                <div class="form-grid-2">
+                    <div class="form-group"><label>Geliş Tarihi</label><input type="date" id="inGelisTarihi" required></div>
+                    <div class="form-group"><label>Parti No</label><input type="text" id="inPartiNo" required></div>
+                    <div class="form-group"><label>Top Sayısı</label><input type="number" id="inTopSayisi" required></div>
+                    <div class="form-group"><label>Gelen Miktar</label><input type="number" step="0.01" id="inGelenMiktar" required></div>
+                    <div class="form-group"><label>Gelen En (cm)</label><input type="number" step="0.1" id="inGelenEn"></div>
+                    <div class="form-group"><label>Gelen Gramaj (gr/m²)</label><input type="number" step="0.1" id="inGelenGramaj"></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Kullanılabilir En</label><input type="number" step="0.1" id="inKullanilabilirEn"></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Kumaş Lokasyonu</label><input type="text" id="inLokasyon" placeholder="Örn: Raf A-1"></div>
                 </div>
-                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeEntryModal()">Vazgeç</button>
                     <button type="submit" class="btn-primary">Kaydı Kaydet</button>
                 </div>
@@ -275,46 +227,27 @@
         </div>
     </div>
 
-    <div id="editEntryModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2100;">
-        <div class="card" style="width:550px;max-width:95vw;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <div id="editEntryModal" class="modal d-none">
+        <div class="card modal-content" style="width:600px;">
+            <div class="modal-header">
                 <div style="font-weight:800;">Hareket Kaydını Düzenle</div>
                 <button class="action-btn" onclick="closeEditEntryModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="editEntryForm">
                 <input type="hidden" id="editRowIndex">
                 <input type="hidden" id="editLineId">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Geliş Tarihi</label>
-                        <input type="date" id="editGelisTarihi" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Parti No</label>
-                        <input type="text" id="editPartiNo" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Top Sayısı</label>
-                        <input type="number" id="editTopSayisi" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen Miktar</label>
-                        <input type="number" step="0.01" id="editGelenMiktar" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen En (cm)</label>
-                        <input type="number" step="0.1" id="editGelenEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size:12px; font-weight:700;">Gelen Gramaj (gr/m²)</label>
-                        <input type="number" step="0.1" id="editGelenGramaj" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label style="font-size:12px; font-weight:700;">Kullanılabilir En</label>
-                        <input type="number" step="0.1" id="editKullanilabilirEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
-                    </div>
+                <div class="form-grid-2">
+                    <div class="form-group"><label>Geliş Tarihi</label><input type="date" id="editGelisTarihi" required></div>
+                    <div class="form-group"><label>Parti No</label><input type="text" id="editPartiNo"></div>
+                    <div class="form-group"><label>Top Sayısı</label><input type="number" id="editTopSayisi"></div>
+                    <div class="form-group"><label>Gelen Miktar</label><input type="number" step="0.01" id="editGelenMiktar" required></div>
+                    <div class="form-group"><label>Gelen En (cm)</label><input type="number" step="0.1" id="editGelenEn"></div>
+                    <div class="form-group"><label>Gelen Gramaj (gr/m²)</label><input type="number" step="0.1" id="editGelenGramaj"></div>
+                    <div class="form-group"><label>Kullanılabilir En</label><input type="number" step="0.1" id="editKullanilabilirEn"></div>
+                    <div class="form-group"><label>Kumaş Lokasyonu</label><input type="text" id="editLokasyon"></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Sevk Tarihi</label><input type="date" id="editSevkTarihi"></div>
                 </div>
-                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeEditEntryModal()">Vazgeç</button>
                     <button type="submit" class="btn-primary">Değişiklikleri Kaydet</button>
                 </div>
