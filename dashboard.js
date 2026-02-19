@@ -274,7 +274,7 @@ async function selectPlan(val) {
 }
 
 /**
- * Plan Özet Tablosunu Render Et (Responsive Optimizasyonlu)
+ * Plan Özet Tablosunu Render Et (Icon-Only Butonlar)
  */
 function renderEntryMaster(rows) {
     const tbody = document.getElementById('entryMasterTbody');
@@ -290,9 +290,15 @@ function renderEntryMaster(rows) {
 
         let actions = '';
         if (r.status === 'Manuel Kapatıldı') {
-            actions = `<button class="action-btn edit-btn" title="Geri Aç" onclick="entryReopen('${r.line_id}')"><i class="fas fa-undo"></i></button>`;
+            actions = `
+                <button class="action-btn edit-btn" title="Planı Geri Aç" onclick="entryReopen('${r.line_id}')">
+                    <i class="fas fa-undo"></i>
+                </button>`;
         } else if (r.status === 'Devam Ediyor') {
-            actions = `<button class="action-btn success-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>`;
+            actions = `
+                <button class="action-btn success-btn" title="Planı Manuel Kapat" onclick="entryClose('${r.line_id}')">
+                    <i class="fas fa-check"></i>
+                </button>`;
         }
 
         tr.innerHTML = `
@@ -309,14 +315,12 @@ function renderEntryMaster(rows) {
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn add-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')">
+                    <button class="action-btn add-btn" title="Yeni Kumaş Girişi" onclick="entryAdd('${r.line_id}')">
                         <i class="fas fa-plus"></i>
-                        <span>Giriş</span>
                     </button>
                     ${actions}
-                    <button class="action-btn detail-btn" title="Hareketler" onclick="entryDetail(this,'${r.line_id}')">
+                    <button class="action-btn detail-btn" title="Hareket Detaylarını Göster" onclick="entryDetail(this,'${r.line_id}')">
                         <i class="fas fa-list"></i>
-                        <span>Detay</span>
                     </button>
                 </div>
             </td>`;
@@ -325,7 +329,7 @@ function renderEntryMaster(rows) {
 }
 
 /**
- * Hareket Detaylarını Listele
+ * Hareket Detaylarını Listele (Icon-Only Butonlar)
  */
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
@@ -363,10 +367,10 @@ async function entryDetail(btn, lineId) {
                     <td>${item.sevk_tarihi || '-'}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(item)})'>
+                            <button class="action-btn edit-btn" title="Kaydı Düzenle" onclick='editEntry(${JSON.stringify(item)})'>
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="action-btn delete-btn" onclick="deleteEntry(${item.row_index}, '${lineId}')">
+                            <button class="action-btn delete-btn" title="Kaydı Sil" onclick="deleteEntry(${item.row_index}, '${lineId}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -652,7 +656,7 @@ function resetEntryDetail() {
 }
 
 // ================================================================
-// 2. KULLANICI YÖNETİMİ
+// 2. KULLANICI YÖNETİMİ (Icon-Only Butonlar)
 // ================================================================
 
 /**
@@ -681,10 +685,10 @@ async function fetchUsers() {
                 <td><span class="status-badge status-${u.status}">${u.status.toUpperCase()}</span></td>
                 <td>
                     <div class="action-buttons">
-                        <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})'>
+                        <button class="action-btn edit-btn" title="Kullanıcıyı Düzenle" onclick='openEditModal(${JSON.stringify(u)})'>
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')">
+                        <button class="action-btn delete-btn" title="Kullanıcıyı Sil" onclick="deleteUser('${u.user_id}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
