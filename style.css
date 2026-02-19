@@ -1,6 +1,6 @@
 /**
  * style.css - Pameks Kumaş Yönetim Sistemi
- * Tam Responsive + Modern UI + Mobil Optimizasyonlu
+ * Tam Responsive + Modern UI + Mobil Optimizasyonlu + Icon-Only Buttons
  */
 
 /* ============================================
@@ -798,19 +798,72 @@ a:hover {
   cursor: not-allowed;
 }
 
+/* ============================================
+   ACTION BUTTONS (Icon Only with Tooltip)
+============================================ */
 .action-btn {
   border: 1px solid var(--border);
   background: white;
   border-radius: var(--radius-sm);
-  padding: 8px 12px;
+  padding: 10px;
   cursor: pointer;
   color: var(--text-muted);
   transition: all var(--transition-fast);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  justify-content: center;
+  font-size: 15px;
   font-family: inherit;
+  position: relative;
+  min-width: 38px;
+  min-height: 38px;
+}
+
+.action-btn i {
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Tooltip Styles */
+.action-btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: rgba(15, 23, 42, 0.95);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Tooltip Arrow */
+.action-btn::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(15, 23, 42, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.action-btn:hover::after,
+.action-btn:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 .action-btn:hover {
@@ -852,8 +905,9 @@ a:hover {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ============================================
@@ -1245,15 +1299,23 @@ a:hover {
     min-width: 800px;
   }
   
-  /* Action Buttons Stack */
-  .action-buttons {
-    flex-direction: column;
-    width: 100%;
+  /* Action Buttons - Mobile Touch Friendly */
+  .action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
   }
   
-  .action-btn {
-    width: 100%;
-    justify-content: center;
+  .action-btn::after {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  
+  /* Mobilde tooltip'i tıklamada göster */
+  .action-btn:active::after,
+  .action-btn:active::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
   }
   
   /* Card Header Stack */
