@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbz0L3yajjtgcmAnu2ylII1hVLHRcJXekBE2m4px30sAUX3buwMqpUQaFK9VcQZQGMq4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby940TGnBM18mJG5qoSprAfePXLnlnUKY6lY5wIDexPUX3lVdUFZS8YkYenJEwBFMUB/exec";
 const loginForm = document.getElementById('loginForm');
 const loadingOverlay = document.getElementById('loadingOverlay');
 
