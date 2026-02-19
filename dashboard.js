@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Mobil Uyumlu + Gelişmiş Arama & Audit Log)
+ * dashboard.js - Frontend Uygulama Mantığı (SVG Icon'lu + Mobil Uyumlu + Audit Log)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -14,6 +14,19 @@ let entryCustomersLoaded = false;
 // Dropdown Veri Havuzu
 let currentCustomerList = [];
 let currentPlanList = [];
+
+// ============================================
+// SVG ICON KÜTÜPHANESİ (Font Awesome Yerine)
+// ============================================
+const SVG_ICONS = {
+    plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+    check: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    undo: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>`,
+    list: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`,
+    edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+    trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`,
+    close: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
+};
 
 /**
  * ============================================
@@ -208,7 +221,7 @@ function renderDropdown(id, data, onSelect) {
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'dropdown-item';
-        div.innerHTML = `<i class="far fa-circle" style="font-size:8px; margin-right:8px; opacity:0.4;"></i> ${item}`;
+        div.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--primary-color);opacity:0.4;margin-right:10px;"></span>${item}`;
         div.onclick = () => {
             onSelect(item);
             toggleDropdown(id, false);
@@ -274,7 +287,7 @@ async function selectPlan(val) {
 }
 
 /**
- * Plan Özet Tablosunu Render Et (Icon-Only Butonlar)
+ * Plan Özet Tablosunu Render Et (SVG Icon'lu)
  */
 function renderEntryMaster(rows) {
     const tbody = document.getElementById('entryMasterTbody');
@@ -292,12 +305,12 @@ function renderEntryMaster(rows) {
         if (r.status === 'Manuel Kapatıldı') {
             actions = `
                 <button class="action-btn edit-btn" title="Planı Geri Aç" onclick="entryReopen('${r.line_id}')">
-                    <i class="fas fa-undo"></i>
+                    ${SVG_ICONS.undo}
                 </button>`;
         } else if (r.status === 'Devam Ediyor') {
             actions = `
                 <button class="action-btn success-btn" title="Planı Manuel Kapat" onclick="entryClose('${r.line_id}')">
-                    <i class="fas fa-check"></i>
+                    ${SVG_ICONS.check}
                 </button>`;
         }
 
@@ -316,11 +329,11 @@ function renderEntryMaster(rows) {
             <td>
                 <div class="action-buttons">
                     <button class="action-btn add-btn" title="Yeni Kumaş Girişi" onclick="entryAdd('${r.line_id}')">
-                        <i class="fas fa-plus"></i>
+                        ${SVG_ICONS.plus}
                     </button>
                     ${actions}
                     <button class="action-btn detail-btn" title="Hareket Detaylarını Göster" onclick="entryDetail(this,'${r.line_id}')">
-                        <i class="fas fa-list"></i>
+                        ${SVG_ICONS.list}
                     </button>
                 </div>
             </td>`;
@@ -329,7 +342,7 @@ function renderEntryMaster(rows) {
 }
 
 /**
- * Hareket Detaylarını Listele (Icon-Only Butonlar)
+ * Hareket Detaylarını Listele (SVG Icon'lu)
  */
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
@@ -368,10 +381,10 @@ async function entryDetail(btn, lineId) {
                     <td>
                         <div class="action-buttons">
                             <button class="action-btn edit-btn" title="Kaydı Düzenle" onclick='editEntry(${JSON.stringify(item)})'>
-                                <i class="fas fa-edit"></i>
+                                ${SVG_ICONS.edit}
                             </button>
                             <button class="action-btn delete-btn" title="Kaydı Sil" onclick="deleteEntry(${item.row_index}, '${lineId}')">
-                                <i class="fas fa-trash"></i>
+                                ${SVG_ICONS.trash}
                             </button>
                         </div>
                     </td>`;
@@ -425,7 +438,7 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
         gelen_gramaj: document.getElementById('inGelenGramaj').value,
         kullanilabilir_en: document.getElementById('inKullanilabilirEn').value,
         lokasyon: document.getElementById('inLokasyon').value,
-        user_name: user.full_name // Audit için
+        user_name: user.full_name
     };
     
     toggleLoading(true);
@@ -498,7 +511,7 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
         kullanilabilir_en: document.getElementById('editKullanilabilirEn').value,
         lokasyon: document.getElementById('editLokasyon').value,
         sevk_tarihi: document.getElementById('editSevkTarihi').value,
-        user_name: user.full_name // Audit için
+        user_name: user.full_name
     };
     
     toggleLoading(true);
@@ -656,7 +669,7 @@ function resetEntryDetail() {
 }
 
 // ================================================================
-// 2. KULLANICI YÖNETİMİ (Icon-Only Butonlar)
+// 2. KULLANICI YÖNETİMİ (SVG Icon'lu)
 // ================================================================
 
 /**
@@ -686,10 +699,10 @@ async function fetchUsers() {
                 <td>
                     <div class="action-buttons">
                         <button class="action-btn edit-btn" title="Kullanıcıyı Düzenle" onclick='openEditModal(${JSON.stringify(u)})'>
-                            <i class="fas fa-edit"></i>
+                            ${SVG_ICONS.edit}
                         </button>
                         <button class="action-btn delete-btn" title="Kullanıcıyı Sil" onclick="deleteUser('${u.user_id}')">
-                            <i class="fas fa-trash"></i>
+                            ${SVG_ICONS.trash}
                         </button>
                     </div>
                 </td>`;
@@ -871,13 +884,16 @@ function renderPagination() {
     const container = document.getElementById('pagination');
     const totalPages = Math.ceil(filteredFabrics.length / rowsPerPage) || 1;
     
+    const chevronLeft = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+    const chevronRight = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+    
     container.innerHTML = `
         <button class="btn-secondary" ${currentPage === 1 ? 'disabled' : ''} onclick="currentPage--; renderFabrics();">
-            <i class="fas fa-chevron-left"></i> Geri
+            ${chevronLeft} Geri
         </button>
         <span class="badge">${currentPage} / ${totalPages}</span>
         <button class="btn-secondary" ${currentPage === totalPages ? 'disabled' : ''} onclick="currentPage++; renderFabrics();">
-            İleri <i class="fas fa-chevron-right"></i>
+            İleri ${chevronRight}
         </button>`;
 }
 
@@ -891,7 +907,6 @@ function handleFileUpload(input) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         Swal.fire('Bilgi', 'ERP Verisi yükleme işlemi başlatıldı.', 'info');
-        // Burada dosya içeriğini parse edip API'ye gönderebilirsiniz
         console.log('Dosya içeriği:', e.target.result);
     };
     reader.readAsText(file);
