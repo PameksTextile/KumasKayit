@@ -17,7 +17,7 @@
     </div>
 
     <!-- HAMBURGER MENU BUTTON (Sadece Mobilde Görünür) -->
-    <button class="menu-toggle" id="menuToggle">
+    <button class="menu-toggle" id="menuToggle" title="Menüyü Aç/Kapat">
         <i class="fas fa-bars"></i>
     </button>
 
@@ -65,7 +65,7 @@
                         <i class="fas fa-user"></i>
                         <span id="displayFullName">-</span>
                     </div>
-                    <button id="logoutBtn" class="logout-btn">
+                    <button id="logoutBtn" class="logout-btn" title="Çıkış Yap">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Çıkış</span>
                     </button>
@@ -82,7 +82,7 @@
                             <div class="badge">Kullanıcılar</div>
                         </div>
                         <div class="action-buttons">
-                            <button class="btn-primary" onclick="openCreateUserModal()">
+                            <button class="btn-primary" onclick="openCreateUserModal()" title="Yeni Kullanıcı Ekle">
                                 <i class="fas fa-plus"></i>
                                 <span>Yeni Kullanıcı</span>
                             </button>
@@ -217,7 +217,7 @@
                         </div>
                         <div class="action-buttons">
                             <input type="file" id="fabricFileInput" accept=".txt" style="display: none;" onchange="handleFileUpload(this)">
-                            <button class="btn-primary" onclick="document.getElementById('fabricFileInput').click()">
+                            <button class="btn-primary" onclick="document.getElementById('fabricFileInput').click()" title="ERP TXT Dosyası Yükle">
                                 <i class="fas fa-file-upload"></i>
                                 <span>ERP TXT Yükle</span>
                             </button>
@@ -259,7 +259,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div id="userModalTitle">Kullanıcı</div>
-                <button class="action-btn" onclick="closeUserModal()">
+                <button class="action-btn" onclick="closeUserModal()" title="Kapat">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -312,7 +312,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>Yeni Kumaş Girişi</div>
-                <button class="action-btn" onclick="closeEntryModal()">
+                <button class="action-btn" onclick="closeEntryModal()" title="Kapat">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -367,7 +367,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>Hareket Kaydını Düzenle</div>
-                <button class="action-btn" onclick="closeEditEntryModal()">
+                <button class="action-btn" onclick="closeEditEntryModal()" title="Kapat">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
