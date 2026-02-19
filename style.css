@@ -1,6 +1,6 @@
 /**
  * style.css - Pameks Kumaş Yönetim Sistemi
- * Tam Responsive + Modern UI + Mobil Optimizasyonlu + Icon-Only Buttons
+ * SVG Icon'lu + Tam Responsive + Modern UI + Mobil Optimizasyonlu
  */
 
 /* ============================================
@@ -60,6 +60,15 @@ a {
 
 a:hover {
   color: var(--primary-color);
+}
+
+/* ============================================
+   SVG ICON GLOBAL STYLES
+============================================ */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* ============================================
@@ -147,8 +156,7 @@ a:hover {
   background: rgba(255,255,255,0.03);
 }
 
-.sidebar-brand i {
-  font-size: 24px;
+.sidebar-brand svg {
   color: var(--primary-color);
   animation: pulse 2s ease-in-out infinite;
 }
@@ -234,14 +242,13 @@ a:hover {
   background: white;
 }
 
-.sidebar-menu li a i {
-  font-size: 18px;
+.sidebar-menu li a svg {
   width: 20px;
-  text-align: center;
+  height: 20px;
   transition: transform var(--transition-fast);
 }
 
-.sidebar-menu li a:hover i {
+.sidebar-menu li a:hover svg {
   transform: scale(1.1);
 }
 
@@ -263,7 +270,12 @@ a:hover {
   cursor: pointer;
   box-shadow: var(--shadow-md);
   transition: all var(--transition-fast);
-  font-size: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-toggle svg {
+  stroke: white;
 }
 
 .menu-toggle:hover {
@@ -354,8 +366,9 @@ a:hover {
   background: var(--primary-light);
 }
 
-.user-chip i {
+.user-chip svg {
   color: var(--primary-color);
+  stroke: var(--primary-color);
 }
 
 .logout-btn {
@@ -371,6 +384,10 @@ a:hover {
   gap: 8px;
   transition: all var(--transition-fast);
   font-size: 14px;
+}
+
+.logout-btn svg {
+  stroke: white;
 }
 
 .logout-btn:hover {
@@ -580,18 +597,21 @@ a:hover {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-.select-input-wrapper i {
+.select-input-wrapper svg {
   position: absolute;
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+  stroke: var(--text-muted);
   pointer-events: none;
   transition: transform var(--transition-fast);
 }
 
-.select-input-wrapper input:focus + i {
+.select-input-wrapper input:focus + svg {
   transform: translateY(-50%) rotate(180deg);
+  color: var(--primary-color);
+  stroke: var(--primary-color);
 }
 
 .dropdown-list {
@@ -651,14 +671,6 @@ a:hover {
   background: var(--primary-light);
   color: var(--primary-color);
   padding-left: 20px;
-}
-
-.dropdown-item i {
-  transition: opacity var(--transition-fast);
-}
-
-.dropdown-item:hover i {
-  opacity: 1;
 }
 
 /* ============================================
@@ -758,6 +770,10 @@ a:hover {
   font-family: inherit;
 }
 
+.btn-primary svg {
+  stroke: white;
+}
+
 .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
@@ -785,6 +801,13 @@ a:hover {
   transition: all var(--transition-fast);
   font-size: 14px;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary svg {
+  stroke: currentColor;
 }
 
 .btn-secondary:hover {
@@ -799,7 +822,7 @@ a:hover {
 }
 
 /* ============================================
-   ACTION BUTTONS (Icon Only with Tooltip)
+   ACTION BUTTONS (SVG Icon with Tooltip)
 ============================================ */
 .action-btn {
   border: 1px solid var(--border);
@@ -812,19 +835,19 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
   font-family: inherit;
   position: relative;
   min-width: 38px;
   min-height: 38px;
 }
 
-.action-btn i {
-  margin: 0;
+.action-btn svg {
+  stroke: currentColor;
   pointer-events: none;
+  transition: transform var(--transition-fast);
 }
 
-/* Tooltip Styles - Sadece title attribute varsa göster */
+/* Tooltip Styles */
 .action-btn[title]:not([title=""])::after {
   content: attr(title);
   position: absolute;
@@ -845,7 +868,6 @@ a:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* Tooltip Arrow - Sadece title attribute varsa göster */
 .action-btn[title]:not([title=""])::before {
   content: '';
   position: absolute;
@@ -871,6 +893,10 @@ a:hover {
   color: var(--primary-color);
   background: var(--primary-light);
   transform: translateY(-2px);
+}
+
+.action-btn:hover svg {
+  transform: scale(1.1);
 }
 
 .action-btn.edit-btn:hover {
@@ -960,13 +986,15 @@ a:hover {
   min-width: 200px;
 }
 
-.search-container i {
+.search-container svg {
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+  stroke: var(--text-muted);
   transition: color var(--transition-fast);
+  pointer-events: none;
 }
 
 .search-container input {
@@ -984,8 +1012,9 @@ a:hover {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-.search-container input:focus + i {
+.search-container input:focus ~ svg {
   color: var(--primary-color);
+  stroke: var(--primary-color);
 }
 
 /* ============================================
@@ -1083,9 +1112,11 @@ a:hover {
   animation: pulse 2s ease-in-out infinite;
 }
 
-.icon-circle i {
-  font-size: 32px;
+.icon-circle svg {
+  width: 32px;
+  height: 32px;
   color: var(--primary-color);
+  stroke: var(--primary-color);
 }
 
 .login-header h2 {
@@ -1127,11 +1158,13 @@ a:hover {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+  stroke: var(--text-muted);
   transition: all var(--transition-fast);
 }
 
 .input-wrapper.focused .input-icon {
   color: var(--primary-color);
+  stroke: var(--primary-color);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -1184,7 +1217,7 @@ a:hover {
   margin: 4px 0;
 }
 
-/* Shake Animation (Hatalı giriş için) */
+/* Shake Animation */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -1223,8 +1256,6 @@ a:hover {
 @media (max-width: 768px) {
   .menu-toggle {
     display: flex;
-    align-items: center;
-    justify-content: center;
   }
   
   .sidebar {
@@ -1271,7 +1302,6 @@ a:hover {
     font-size: 13px;
   }
   
-  /* Modal Full Screen on Mobile */
   .modal {
     padding: 0;
   }
@@ -1283,14 +1313,12 @@ a:hover {
     padding: 20px;
   }
   
-  /* Form Grid Responsive */
   .form-grid,
   .form-grid-2,
   .entry-filter-row {
     grid-template-columns: 1fr;
   }
   
-  /* Table Horizontal Scroll */
   .table-card {
     overflow-x: auto;
   }
@@ -1299,7 +1327,6 @@ a:hover {
     min-width: 800px;
   }
   
-  /* Action Buttons - Mobile Touch Friendly */
   .action-btn {
     min-width: 44px;
     min-height: 44px;
@@ -1311,14 +1338,12 @@ a:hover {
     padding: 5px 10px;
   }
   
-  /* Mobilde tooltip'i tıklamada göster */
   .action-btn[title]:not([title=""]):active::after,
   .action-btn[title]:not([title=""]):active::before {
     opacity: 1;
     transform: translateX(-50%) scale(1);
   }
   
-  /* Card Header Stack */
   .card-header-row,
   .entry-filter-header {
     flex-direction: column;
@@ -1329,7 +1354,6 @@ a:hover {
     width: 100%;
   }
   
-  /* Login Card */
   .login-card {
     padding: 32px 20px;
   }
@@ -1386,8 +1410,9 @@ a:hover {
     height: 60px;
   }
   
-  .icon-circle i {
-    font-size: 28px;
+  .icon-circle svg {
+    width: 28px;
+    height: 28px;
   }
   
   .input-group label {
@@ -1445,11 +1470,4 @@ a:hover {
     box-shadow: none;
     border: 1px solid #ddd;
   }
-}
-
-/* ============================================
-   DARK MODE SUPPORT (İsteğe Bağlı)
-============================================ */
-@media (prefers-color-scheme: dark) {
-  /* Dark mode desteği eklemek isterseniz buraya ekleyebilirsiniz */
 }
