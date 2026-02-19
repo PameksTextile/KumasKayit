@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Gelişmiş Arama & Audit Log Sürümü)
+ * dashboard.js - Frontend Uygulama Mantığı (Mobil Uyumlu + Gelişmiş Arama & Audit Log)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -16,9 +16,12 @@ let currentCustomerList = [];
 let currentPlanList = [];
 
 /**
- * Sayfa Yükleme ve Oturum Kontrolü
+ * ============================================
+ * SAYFA YÜKLEME VE MOBİL MENÜ KONTROLÜ
+ * ============================================
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Oturum Kontrolü
     const userJson = sessionStorage.getItem('user');
     if (!userJson) {
         window.location.href = 'index.html';
@@ -28,23 +31,63 @@ document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(userJson);
     document.getElementById('displayFullName').textContent = user.full_name;
 
+    // Çıkış Butonu
     document.getElementById('logoutBtn').addEventListener('click', () => {
         sessionStorage.clear();
         window.location.href = 'index.html';
     });
 
-    // Sayfa dışına tıklandığında dropdownları kapat
+    // ============================================
+    // MOBİL HAMBURGER MENÜ KONTROLÜ
+    // ============================================
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    // Hamburger menü toggle
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        });
+    }
+    
+    // Overlay'e tıklandığında menüyü kapat
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+    }
+    
+    // Menü linklerine tıklandığında mobilde sidebar'ı kapat
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+        });
+    });
+
+    // ============================================
+    // DROPDOWN KONTROLÜ (Sayfa dışına tıklandığında kapat)
+    // ============================================
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.searchable-select')) {
             hideAllDropdowns();
         }
     });
 
+    // İlk sayfa yüklemesi
     fetchUsers();
 });
 
 /**
- * Loading Ekranı Kontrolü (UX Fix: Spinner mekanizması her zaman temizlenir)
+ * ============================================
+ * LOADING EKRANI KONTROLÜ
+ * ============================================
  */
 function toggleLoading(show) {
     const loader = document.getElementById('loadingOverlay');
@@ -54,20 +97,26 @@ function toggleLoading(show) {
 }
 
 /**
- * Bölüm Değiştirme
+ * ============================================
+ * BÖLÜM DEĞİŞTİRME (Responsive Optimizasyonlu)
+ * ============================================
  */
 function showSection(name) {
+    // Tüm bölümleri gizle
     document.getElementById('section-users').classList.add('d-none');
     document.getElementById('section-entry').classList.add('d-none');
     document.getElementById('section-fabrics').classList.add('d-none');
 
+    // Seçili bölümü göster
     document.getElementById('section-' + name).classList.remove('d-none');
 
+    // Menü aktif durumunu güncelle
     document.getElementById('menu-users').classList.remove('active');
     document.getElementById('menu-entry').classList.remove('active');
     document.getElementById('menu-fabrics').classList.remove('active');
     document.getElementById('menu-' + name).classList.add('active');
 
+    // Sayfa başlığını güncelle
     if (name === 'users') {
         document.getElementById('current-page-title').textContent = 'Kullanıcı Yönetimi';
         fetchUsers();
@@ -80,6 +129,9 @@ function showSection(name) {
         document.getElementById('current-page-title').textContent = 'Kumaş Bilgileri';
         loadFabrics();
     }
+
+    // Mobilde sayfa değiştiğinde üste scroll
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ================================================================
@@ -133,8 +185,9 @@ async function loadEntryCustomers() {
         const result = await res.json();
         currentCustomerList = result.data || [];
         renderDropdown('customerDropdown', currentCustomerList, selectCustomer);
-    } catch {
+    } catch (error) {
         Swal.fire('Hata', 'Müşteriler yüklenemedi.', 'error');
+        console.error('Müşteri yükleme hatası:', error);
     } finally {
         toggleLoading(false);
     }
@@ -176,7 +229,7 @@ async function selectCustomer(val) {
     planInput.value = "";
     planInput.disabled = true;
     planDropdown.innerHTML = "";
-    document.getElementById('entryMasterTbody').innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
+    document.getElementById('entryMasterTbody').innerHTML = `<tr><td colspan="12" style="text-align:center;">Plan seçiniz.</td></tr>`;
 
     toggleLoading(true);
     try {
@@ -186,6 +239,9 @@ async function selectCustomer(val) {
         renderDropdown('planDropdown', currentPlanList, selectPlan);
         planInput.disabled = false;
         document.getElementById('entryHintBadge').textContent = 'Müşteri seçildi, plan bekleniyor...';
+    } catch (error) {
+        Swal.fire('Hata', 'Planlar yüklenemedi.', 'error');
+        console.error('Plan yükleme hatası:', error);
     } finally {
         toggleLoading(false);
     }
@@ -199,7 +255,7 @@ async function selectPlan(val) {
     const customer = document.getElementById('entryCustomerInput').value;
     const tbody = document.getElementById('entryMasterTbody');
     
-    tbody.innerHTML = `<tr><td colspan="12">Veriler hazırlanıyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">Veriler hazırlanıyor...</td></tr>`;
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { 
@@ -209,14 +265,20 @@ async function selectPlan(val) {
         const result = await res.json();
         renderEntryMaster(result.data || []);
         document.getElementById('entryHintBadge').textContent = `Toplam: ${result.data.length} kalem`;
+    } catch (error) {
+        Swal.fire('Hata', 'Plan özeti yüklenemedi.', 'error');
+        console.error('Plan özeti hatası:', error);
     } finally {
         toggleLoading(false);
     }
 }
 
+/**
+ * Plan Özet Tablosunu Render Et (Responsive Optimizasyonlu)
+ */
 function renderEntryMaster(rows) {
     const tbody = document.getElementById('entryMasterTbody');
-    tbody.innerHTML = rows.length ? '' : `<tr><td colspan="12">Kayıt yok.</td></tr>`;
+    tbody.innerHTML = rows.length ? '' : `<tr><td colspan="12" style="text-align:center;">Kayıt yok.</td></tr>`;
 
     rows.forEach(r => {
         const tr = document.createElement('tr');
@@ -242,14 +304,20 @@ function renderEntryMaster(rows) {
             <td>${r.desired_gsm || '-'}</td>
             <td style="color:var(--text-muted);">${formatNumberTR(r.target_qty)}</td>
             <td style="font-weight:700;">${formatNumberTR(r.incoming_qty)}</td>
-            <td style="color:${diff <= 0 ? 'var(--success-text)' : 'var(--danger-text)'}">${formatNumberTR(diff)}</td>
+            <td style="color:${diff <= 0 ? '#10b981' : '#ef4444'}">${formatNumberTR(diff)}</td>
             <td>%${formatNumberTR(r.percent)}</td>
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn add-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
+                    <button class="action-btn add-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')">
+                        <i class="fas fa-plus"></i>
+                        <span>Giriş</span>
+                    </button>
                     ${actions}
-                    <button class="action-btn detail-btn" title="Hareketler" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i> Detay</button>
+                    <button class="action-btn detail-btn" title="Hareketler" onclick="entryDetail(this,'${r.line_id}')">
+                        <i class="fas fa-list"></i>
+                        <span>Detay</span>
+                    </button>
                 </div>
             </td>`;
         tbody.appendChild(tr);
@@ -277,6 +345,7 @@ async function entryDetail(btn, lineId) {
         });
         const result = await res.json();
         tbody.innerHTML = '';
+        
         if (!result.data || result.data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Henüz bir hareket kaydı yok.</td></tr>`;
         } else {
@@ -294,13 +363,25 @@ async function entryDetail(btn, lineId) {
                     <td>${item.sevk_tarihi || '-'}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(item)})'><i class="fas fa-edit"></i></button>
-                            <button class="action-btn delete-btn" onclick="deleteEntry(${item.row_index}, '${lineId}')"><i class="fas fa-trash"></i></button>
+                            <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(item)})'>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteEntry(${item.row_index}, '${lineId}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>`;
                 tbody.appendChild(tr);
             });
         }
+
+        // Mobilde detay kartına scroll
+        if (window.innerWidth <= 768) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (error) {
+        Swal.fire('Hata', 'Detaylar yüklenemedi.', 'error');
+        console.error('Detay yükleme hatası:', error);
     } finally {
         toggleLoading(false);
     }
@@ -310,6 +391,9 @@ async function entryDetail(btn, lineId) {
 // FONKSİYONLAR: GİRİŞ, DÜZENLEME, SİLME (AUDIT LOG DESTEKLİ)
 // ================================================================
 
+/**
+ * Yeni Kumaş Girişi Modal Aç
+ */
 function entryAdd(lineId) {
     document.getElementById('entryForm').reset();
     document.getElementById('entryLineId').value = lineId;
@@ -317,9 +401,13 @@ function entryAdd(lineId) {
     document.getElementById('entryModal').classList.remove('d-none');
 }
 
-function closeEntryModal() { document.getElementById('entryModal').classList.add('d-none'); }
+function closeEntryModal() { 
+    document.getElementById('entryModal').classList.add('d-none'); 
+}
 
-// Yeni Kayıt Kaydetme (Audit: Oluşturan Bilgisi)
+/**
+ * Yeni Kayıt Kaydetme (Audit: Oluşturan Bilgisi)
+ */
 document.getElementById('entryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -335,6 +423,7 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
         lokasyon: document.getElementById('inLokasyon').value,
         user_name: user.full_name // Audit için
     };
+    
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_entry", data }) });
@@ -343,10 +432,20 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
             Swal.fire('Başarılı', 'Kayıt ve Audit Log oluşturuldu.', 'success');
             closeEntryModal();
             await selectPlan(document.getElementById('entryPlanInput').value);
+        } else {
+            Swal.fire('Hata', result.message || 'Kayıt eklenemedi.', 'error');
         }
-    } finally { toggleLoading(false); }
+    } catch (error) {
+        Swal.fire('Hata', 'Kayıt eklenirken bir sorun oluştu.', 'error');
+        console.error('Kayıt ekleme hatası:', error);
+    } finally { 
+        toggleLoading(false); 
+    }
 });
 
+/**
+ * Kayıt Düzenleme Modal Aç
+ */
 function editEntry(item) {
     document.getElementById('editRowIndex').value = item.row_index;
     document.getElementById('editLineId').value = document.querySelector('.row-selected').dataset.lineId;
@@ -369,12 +468,17 @@ function editEntry(item) {
     } else {
         document.getElementById('editSevkTarihi').value = "";
     }
+    
     document.getElementById('editEntryModal').classList.remove('d-none');
 }
 
-function closeEditEntryModal() { document.getElementById('editEntryModal').classList.add('d-none'); }
+function closeEditEntryModal() { 
+    document.getElementById('editEntryModal').classList.add('d-none'); 
+}
 
-// Kayıt Güncelleme (Audit: Düzenleyen Bilgisi)
+/**
+ * Kayıt Güncelleme (Audit: Düzenleyen Bilgisi)
+ */
 document.getElementById('editEntryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -392,6 +496,7 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
         sevk_tarihi: document.getElementById('editSevkTarihi').value,
         user_name: user.full_name // Audit için
     };
+    
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "update_entry", data }) });
@@ -402,65 +507,144 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
             await selectPlan(document.getElementById('entryPlanInput').value);
             const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
             if(targetBtn) targetBtn.click();
+        } else {
+            Swal.fire('Hata', result.message || 'Güncelleme yapılamadı.', 'error');
         }
-    } finally { toggleLoading(false); }
+    } catch (error) {
+        Swal.fire('Hata', 'Güncelleme sırasında bir sorun oluştu.', 'error');
+        console.error('Güncelleme hatası:', error);
+    } finally { 
+        toggleLoading(false); 
+    }
 });
 
+/**
+ * Planı Manuel Kapat
+ */
 async function entryClose(lineId) {
     const { value: text } = await Swal.fire({ 
         title: 'Planı Manuel Kapat', 
         input: 'textarea', 
         inputLabel: 'Kapatma Sebebi', 
         inputPlaceholder: 'İsteğe bağlı not...', 
-        showCancelButton: true 
+        showCancelButton: true,
+        cancelButtonText: 'İptal',
+        confirmButtonText: 'Kapat'
     });
+    
     if (text !== undefined) {
         const user = JSON.parse(sessionStorage.getItem('user'));
         toggleLoading(true);
         try {
             const res = await fetch(API_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "close_plan", data: { line_id: lineId, note: text, user_id: user.user_id, user_name: user.full_name } })
+                body: JSON.stringify({ 
+                    action: "close_plan", 
+                    data: { 
+                        line_id: lineId, 
+                        note: text, 
+                        user_id: user.user_id, 
+                        user_name: user.full_name 
+                    } 
+                })
             });
-            if ((await res.json()).success) {
+            const result = await res.json();
+            if (result.success) {
                 Swal.fire('Kapatıldı', 'Plan manuel olarak kapatıldı.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
+            } else {
+                Swal.fire('Hata', result.message || 'Plan kapatılamadı.', 'error');
             }
-        } finally { toggleLoading(false); }
+        } catch (error) {
+            Swal.fire('Hata', 'Plan kapatılırken bir sorun oluştu.', 'error');
+            console.error('Plan kapatma hatası:', error);
+        } finally { 
+            toggleLoading(false); 
+        }
     }
 }
 
+/**
+ * Planı Geri Aç
+ */
 async function entryReopen(lineId) {
-    const confirm = await Swal.fire({ title: 'Plan Geri Açılsın mı?', icon: 'question', showCancelButton: true });
+    const confirm = await Swal.fire({ 
+        title: 'Plan Geri Açılsın mı?', 
+        icon: 'question', 
+        showCancelButton: true,
+        cancelButtonText: 'İptal',
+        confirmButtonText: 'Evet, Aç'
+    });
+    
     if (confirm.isConfirmed) {
         toggleLoading(true);
         try {
-            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "reopen_plan", line_id: lineId }) });
-            if ((await res.json()).success) {
+            const res = await fetch(API_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "reopen_plan", line_id: lineId }) 
+            });
+            const result = await res.json();
+            if (result.success) {
                 Swal.fire('Geri Açıldı', 'Plan tekrar "Devam Ediyor" statüsünde.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
+            } else {
+                Swal.fire('Hata', result.message || 'Plan açılamadı.', 'error');
             }
-        } finally { toggleLoading(false); }
+        } catch (error) {
+            Swal.fire('Hata', 'Plan açılırken bir sorun oluştu.', 'error');
+            console.error('Plan açma hatası:', error);
+        } finally { 
+            toggleLoading(false); 
+        }
     }
 }
 
+/**
+ * Hareket Kaydını Sil
+ */
 async function deleteEntry(rowIdx, lineId) {
-    const confirm = await Swal.fire({ title: 'Emin misiniz?', text: "Bu hareket kalıcı olarak silinecek.", icon: 'warning', showCancelButton: true });
+    const confirm = await Swal.fire({ 
+        title: 'Emin misiniz?', 
+        text: "Bu hareket kalıcı olarak silinecek.", 
+        icon: 'warning', 
+        showCancelButton: true,
+        cancelButtonText: 'İptal',
+        confirmButtonText: 'Evet, Sil',
+        confirmButtonColor: '#ef4444'
+    });
+    
     if (confirm.isConfirmed) {
         toggleLoading(true);
         try {
-            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_entry", row_idx: rowIdx }) });
-            if ((await res.json()).success) {
+            const res = await fetch(API_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "delete_entry", row_idx: rowIdx }) 
+            });
+            const result = await res.json();
+            if (result.success) {
                 Swal.fire('Silindi', 'Kayıt başarıyla silindi.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
                 const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
                 if(targetBtn) targetBtn.click();
+            } else {
+                Swal.fire('Hata', result.message || 'Kayıt silinemedi.', 'error');
             }
-        } finally { toggleLoading(false); }
+        } catch (error) {
+            Swal.fire('Hata', 'Silme işlemi sırasında bir sorun oluştu.', 'error');
+            console.error('Silme hatası:', error);
+        } finally { 
+            toggleLoading(false); 
+        }
     }
 }
 
-function clearSelectedRows() { document.querySelectorAll('#entryMasterTbody tr').forEach(r => r.classList.remove('row-selected')); }
+/**
+ * Yardımcı Fonksiyonlar
+ */
+function clearSelectedRows() { 
+    document.querySelectorAll('#entryMasterTbody tr').forEach(r => r.classList.remove('row-selected')); 
+}
+
 function resetEntryDetail() { 
     document.getElementById('entryDetailCard').classList.add('d-none'); 
     document.getElementById('entryDetailHint').classList.remove('d-none'); 
@@ -468,9 +652,12 @@ function resetEntryDetail() {
 }
 
 // ================================================================
-// 2. KULLANICI YÖNETİMİ & KATALOG (STABİL)
+// 2. KULLANICI YÖNETİMİ
 // ================================================================
 
+/**
+ * Kullanıcıları Listele
+ */
 async function fetchUsers() {
     toggleLoading(true);
     try {
@@ -478,81 +665,245 @@ async function fetchUsers() {
         const result = await res.json();
         const tbody = document.getElementById('userTableBody');
         tbody.innerHTML = "";
+        
+        if (!result.data || result.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Kullanıcı bulunamadı.</td></tr>';
+            return;
+        }
+        
         result.data.forEach(u => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${u.full_name}</td><td>${u.username}</td><td>${u.mail || ''}</td><td><span class="badge">${u.role.toUpperCase()}</span></td><td><span class="status-badge status-${u.status}">${u.status.toUpperCase()}</span></td>
-                <td><div class="action-buttons"><button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})'><i class="fas fa-edit"></i></button><button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')"><i class="fas fa-trash"></i></button></div></td>`;
+            tr.innerHTML = `
+                <td>${u.full_name}</td>
+                <td>${u.username}</td>
+                <td>${u.mail || '-'}</td>
+                <td><span class="badge">${u.role.toUpperCase()}</span></td>
+                <td><span class="status-badge status-${u.status}">${u.status.toUpperCase()}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>`;
             tbody.appendChild(tr);
         });
-    } finally { toggleLoading(false); }
-}
-
-function openCreateUserModal() { document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı'; document.getElementById('userForm').reset(); document.getElementById('inputUserId').value = ''; document.getElementById('userModal').classList.remove('d-none'); }
-function openEditModal(u) { document.getElementById('userModalTitle').textContent = 'Kullanıcı Düzenle'; document.getElementById('inputUserId').value = u.user_id; document.getElementById('inputFullName').value = u.full_name; document.getElementById('inputUsername').value = u.username; document.getElementById('inputPassword').value = u.password; document.getElementById('inputMail').value = u.mail; document.getElementById('inputRole').value = u.role; document.getElementById('inputStatus').value = u.status; document.getElementById('userModal').classList.remove('d-none'); }
-function closeUserModal() { document.getElementById('userModal').classList.add('d-none'); }
-
-document.getElementById('userForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data = { user_id: document.getElementById('inputUserId').value || null, full_name: document.getElementById('inputFullName').value, username: document.getElementById('inputUsername').value, password: document.getElementById('inputPassword').value, mail: document.getElementById('inputMail').value, role: document.getElementById('inputRole').value, status: document.getElementById('inputStatus').value };
-    toggleLoading(true);
-    try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data }) });
-        if ((await res.json()).success) { Swal.fire('Başarılı', 'Kullanıcı başarıyla kaydedildi.', 'success'); closeUserModal(); fetchUsers(); }
-    } finally { toggleLoading(false); }
-});
-
-async function deleteUser(id) {
-    const c = await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true });
-    if (c.isConfirmed) {
-        toggleLoading(true);
-        try {
-            await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_user", user_id: id }) });
-            fetchUsers();
-        } finally { toggleLoading(false); }
+    } catch (error) {
+        Swal.fire('Hata', 'Kullanıcılar yüklenemedi.', 'error');
+        console.error('Kullanıcı yükleme hatası:', error);
+    } finally { 
+        toggleLoading(false); 
     }
 }
 
+/**
+ * Yeni Kullanıcı Modal Aç
+ */
+function openCreateUserModal() { 
+    document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı'; 
+    document.getElementById('userForm').reset(); 
+    document.getElementById('inputUserId').value = ''; 
+    document.getElementById('userModal').classList.remove('d-none'); 
+}
+
+/**
+ * Kullanıcı Düzenleme Modal Aç
+ */
+function openEditModal(u) { 
+    document.getElementById('userModalTitle').textContent = 'Kullanıcı Düzenle'; 
+    document.getElementById('inputUserId').value = u.user_id; 
+    document.getElementById('inputFullName').value = u.full_name; 
+    document.getElementById('inputUsername').value = u.username; 
+    document.getElementById('inputPassword').value = u.password; 
+    document.getElementById('inputMail').value = u.mail || ''; 
+    document.getElementById('inputRole').value = u.role; 
+    document.getElementById('inputStatus').value = u.status; 
+    document.getElementById('userModal').classList.remove('d-none'); 
+}
+
+function closeUserModal() { 
+    document.getElementById('userModal').classList.add('d-none'); 
+}
+
+/**
+ * Kullanıcı Kaydet/Güncelle
+ */
+document.getElementById('userForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = { 
+        user_id: document.getElementById('inputUserId').value || null, 
+        full_name: document.getElementById('inputFullName').value, 
+        username: document.getElementById('inputUsername').value, 
+        password: document.getElementById('inputPassword').value, 
+        mail: document.getElementById('inputMail').value, 
+        role: document.getElementById('inputRole').value, 
+        status: document.getElementById('inputStatus').value 
+    };
+    
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data }) });
+        const result = await res.json();
+        if (result.success) { 
+            Swal.fire('Başarılı', 'Kullanıcı başarıyla kaydedildi.', 'success'); 
+            closeUserModal(); 
+            fetchUsers(); 
+        } else {
+            Swal.fire('Hata', result.message || 'Kullanıcı kaydedilemedi.', 'error');
+        }
+    } catch (error) {
+        Swal.fire('Hata', 'Kullanıcı kaydedilirken bir sorun oluştu.', 'error');
+        console.error('Kullanıcı kaydetme hatası:', error);
+    } finally { 
+        toggleLoading(false); 
+    }
+});
+
+/**
+ * Kullanıcı Sil
+ */
+async function deleteUser(id) {
+    const c = await Swal.fire({ 
+        title: 'Emin misiniz?', 
+        text: 'Bu kullanıcı kalıcı olarak silinecek.',
+        icon: 'warning', 
+        showCancelButton: true,
+        cancelButtonText: 'İptal',
+        confirmButtonText: 'Evet, Sil',
+        confirmButtonColor: '#ef4444'
+    });
+    
+    if (c.isConfirmed) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_user", user_id: id }) });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Silindi', 'Kullanıcı başarıyla silindi.', 'success');
+                fetchUsers();
+            } else {
+                Swal.fire('Hata', result.message || 'Kullanıcı silinemedi.', 'error');
+            }
+        } catch (error) {
+            Swal.fire('Hata', 'Kullanıcı silinirken bir sorun oluştu.', 'error');
+            console.error('Kullanıcı silme hatası:', error);
+        } finally { 
+            toggleLoading(false); 
+        }
+    }
+}
+
+// ================================================================
+// 3. KUMAŞ KATALOĞU
+// ================================================================
+
+/**
+ * Kumaş Kataloğunu Yükle
+ */
 async function loadFabrics() {
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_fabric_catalog" }) });
         const r = await res.json();
         allFabrics = filteredFabrics = r.data || [];
-        currentPage = 1; renderFabrics();
-    } finally { toggleLoading(false); }
+        currentPage = 1; 
+        renderFabrics();
+    } catch (error) {
+        Swal.fire('Hata', 'Kumaş kataloğu yüklenemedi.', 'error');
+        console.error('Katalog yükleme hatası:', error);
+    } finally { 
+        toggleLoading(false); 
+    }
 }
 
+/**
+ * Kumaş Filtrele
+ */
 function filterFabrics() {
     const q = document.getElementById('fabricSearch').value.toLowerCase().trim();
-    filteredFabrics = allFabrics.filter(f => f.code.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
-    currentPage = 1; renderFabrics();
+    filteredFabrics = allFabrics.filter(f => 
+        f.code.toLowerCase().includes(q) || 
+        f.name.toLowerCase().includes(q)
+    );
+    currentPage = 1; 
+    renderFabrics();
 }
 
+/**
+ * Kumaşları Render Et
+ */
 function renderFabrics() {
     const tbody = document.getElementById('fabricTableBody');
     tbody.innerHTML = '';
     const start = (currentPage - 1) * rowsPerPage;
     const items = filteredFabrics.slice(start, start + rowsPerPage);
-    if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="5">Kayıt bulunamadı.</td></tr>`; } 
-    else { items.forEach(f => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${f.code}</td><td>${f.name}</td><td>${f.width}</td><td>${f.gsm}</td><td>${f.unit}</td>`; tbody.appendChild(tr); }); }
+    
+    if (items.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Kayıt bulunamadı.</td></tr>`; 
+    } else { 
+        items.forEach(f => { 
+            const tr = document.createElement('tr'); 
+            tr.innerHTML = `
+                <td style="font-weight:600;">${f.code}</td>
+                <td>${f.name}</td>
+                <td>${f.width}</td>
+                <td>${f.gsm}</td>
+                <td>${f.unit}</td>`;
+            tbody.appendChild(tr); 
+        }); 
+    }
+    
     document.getElementById('totalFabricsBadge').textContent = `Toplam: ${filteredFabrics.length}`;
     renderPagination();
 }
 
+/**
+ * Sayfalama Render Et
+ */
 function renderPagination() {
     const container = document.getElementById('pagination');
     const totalPages = Math.ceil(filteredFabrics.length / rowsPerPage) || 1;
-    container.innerHTML = `<button class="btn-secondary" ${currentPage === 1 ? 'disabled' : ''} onclick="currentPage--; renderFabrics();">Geri</button><span class="badge">${currentPage} / ${totalPages}</span><button class="btn-secondary" ${currentPage === totalPages ? 'disabled' : ''} onclick="currentPage++; renderFabrics();">İleri</button>`;
+    
+    container.innerHTML = `
+        <button class="btn-secondary" ${currentPage === 1 ? 'disabled' : ''} onclick="currentPage--; renderFabrics();">
+            <i class="fas fa-chevron-left"></i> Geri
+        </button>
+        <span class="badge">${currentPage} / ${totalPages}</span>
+        <button class="btn-secondary" ${currentPage === totalPages ? 'disabled' : ''} onclick="currentPage++; renderFabrics();">
+            İleri <i class="fas fa-chevron-right"></i>
+        </button>`;
 }
 
+/**
+ * ERP TXT Dosyası Yükle
+ */
 function handleFileUpload(input) {
     const file = input.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = async function(e) {
         Swal.fire('Bilgi', 'ERP Verisi yükleme işlemi başlatıldı.', 'info');
+        // Burada dosya içeriğini parse edip API'ye gönderebilirsiniz
+        console.log('Dosya içeriği:', e.target.result);
     };
     reader.readAsText(file);
 }
 
-function formatNumberTR(n) { if (n === null || n === undefined) return "0,00"; return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+// ================================================================
+// YARDIMCI FONKSİYONLAR
+// ================================================================
+
+/**
+ * Sayıları Türkçe Formatta Göster
+ */
+function formatNumberTR(n) { 
+    if (n === null || n === undefined) return "0,00"; 
+    return Number(n).toLocaleString('tr-TR', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+    }); 
+}
