@@ -228,17 +228,19 @@ function resetEntryDetail() {
     document.getElementById('entryDetailCard').classList.add('d-none');
     document.getElementById('entryDetailHint').classList.remove('d-none');
     const dt = document.getElementById('entryDetailTbody');
-    if (dt) dt.innerHTML = `<tr><td colspan="7">-</td></tr>`;
+    if (dt) dt.innerHTML = `<tr><td colspan="9">-</td></tr>`;
     clearSelectedRows();
 }
 
-// Placeholder: 3. adımda gerçek modal+detay yapacağız
+// Placeholder: sonraki adımda modal açacağız
 function entryAdd(lineId) {
-    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Yeni giriş ekranını 3. adımda açacağız. line_id=${lineId}` });
+    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Yeni giriş ekranını bir sonraki adımda açacağız. line_id=${lineId}` });
 }
 function entryClose(lineId) {
-    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Kapatma işlemini 3. adımda Kapatmalar'a yazacağız. line_id=${lineId}` });
+    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Kapatma işlemini Kapatmalar'a yazmayı bir sonraki adımda yapacağız. line_id=${lineId}` });
 }
+
+// ✅ DETAY: API’den çek + seçili satırı vurgula
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
     const tr = btn.closest('tr');
@@ -246,7 +248,54 @@ async function entryDetail(btn, lineId) {
 
     document.getElementById('entryDetailHint').classList.add('d-none');
     document.getElementById('entryDetailCard').classList.remove('d-none');
-    document.getElementById('entryDetailTbody').innerHTML = `<tr><td colspan="7">Detaylar 3. adımda (line_id=${lineId}).</td></tr>`;
+
+    const dt = document.getElementById('entryDetailTbody');
+    dt.innerHTML = `<tr><td colspan="9">Yükleniyor...</td></tr>`;
+
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_incoming_by_line_id", line_id: lineId })
+        });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.message || "Detay alınamadı.");
+
+        renderEntryDetailRows(result.data || []);
+    } catch (e) {
+        dt.innerHTML = `<tr><td colspan="9">Hata: ${String(e.message || e)}</td></tr>`;
+    } finally {
+        toggleLoading(false);
+    }
+}
+
+function renderEntryDetailRows(rows) {
+    const dt = document.getElementById('entryDetailTbody');
+    dt.innerHTML = '';
+
+    if (!rows || rows.length === 0) {
+        dt.innerHTML = `<tr><td colspan="9">Bu line_id için gelen kayıt yok.</td></tr>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r["Geliş Tarihi"] || ''}</td>
+          <td>${r["Parti No"] || ''}</td>
+          <td>${r["Top Sayısı"] || ''}</td>
+          <td>${r["Gelen Miktar"] || ''}</td>
+          <td>${r["Birim"] || ''}</td>
+          <td>${r["Gelen En (cm)"] || ''}</td>
+          <td>${r["Gelen Gramaj (gr/m²)"] || ''}</td>
+          <td>${r["Kumaş Lokasyonu"] || ''}</td>
+          <td>${r["Sevk Tarihi"] || ''}</td>
+        `;
+        frag.appendChild(tr);
+    });
+
+    dt.appendChild(frag);
 }
 
 // ======================
@@ -346,7 +395,7 @@ async function deleteUser(userId) {
 }
 
 // ======================
-// KUMAŞ BİLGİLERİ (mevcut)
+// KUMAŞ BİLGİLERİ
 // ======================
 async function loadFabrics() {
     toggleLoading(true);
