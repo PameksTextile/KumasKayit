@@ -42,7 +42,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="card table-card mt-3">
                     <table class="data-table">
                         <thead>
@@ -68,7 +67,6 @@
                         <h2>Plan ve Kumaş Bilgileri</h2>
                         <span class="badge" id="entryHintBadge">Müşteri seçin</span>
                     </div>
-
                     <div class="entry-filter-row">
                         <div class="filter-group">
                             <label for="entryCustomerSelect">Müşteri</label>
@@ -116,20 +114,20 @@
                     </div>
                     <div class="card table-card mt-3 d-none" id="entryDetailCard">
                         <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Geliş Tarihi</th>
-                                        <th>Parti No</th>
-                                        <th>Top Sayısı</th>
-                                        <th>Gelen Miktar</th>
-                                        <th>Birim</th>
-                                        <th>Gelen En (cm)</th>
-                                        <th>Gelen Gramaj</th>
-                                        <th>Lokasyon</th>
-                                        <th>Sevk Tarihi</th>
-                                        <th>İşlem</th>
-                                    </tr>
-                                </thead>
+                            <thead>
+                                <tr>
+                                    <th>Geliş Tarihi</th>
+                                    <th>Parti No</th>
+                                    <th>Top Sayısı</th>
+                                    <th>Gelen Miktar</th>
+                                    <th>Birim</th>
+                                    <th>Gelen En (cm)</th>
+                                    <th>Gelen Gramaj</th>
+                                    <th>Lokasyon</th>
+                                    <th>Sevk Tarihi</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
                             <tbody id="entryDetailTbody">
                                 <tr><td colspan="10">-</td></tr>
                             </tbody>
@@ -152,7 +150,6 @@
                     </div>
                     <div class="summary-bar"><span id="totalFabricsBadge" class="badge">Yükleniyor...</span></div>
                 </div>
-
                 <div class="card table-card mt-3">
                     <table class="data-table">
                         <thead>
@@ -169,7 +166,6 @@
                         </tbody>
                     </table>
                 </div>
-
                 <div class="card mt-3">
                     <div id="pagination" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;"></div>
                 </div>
@@ -224,6 +220,55 @@
                 <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
                     <button type="button" class="btn-secondary" onclick="closeUserModal()">İptal</button>
                     <button type="submit" class="btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="entryModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2050;">
+        <div class="card" style="width:580px;max-width:95vw;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <div style="font-weight:800;">Yeni Kumaş Girişi</div>
+                <button class="action-btn" onclick="closeEntryModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="entryForm">
+                <input type="hidden" id="entryLineId">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Parti No</label>
+                        <input type="text" id="inPartiNo" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Top Sayısı</label>
+                        <input type="number" id="inTopSayisi" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen Miktar</label>
+                        <input type="number" step="0.01" id="inGelenMiktar" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Birim</label>
+                        <select id="inBirim" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                            <option value="KG">KG</option>
+                            <option value="MT">MT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen En (cm)</label>
+                        <input type="number" step="0.1" id="inGelenEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen Gramaj (gr/m²)</label>
+                        <input type="number" step="0.1" id="inGelenGramaj" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label style="font-size:12px; font-weight:700;">Kumaş Lokasyonu</label>
+                        <input type="text" id="inLokasyon" placeholder="Örn: Depo A-1" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                    <button type="button" class="btn-secondary" onclick="closeEntryModal()">Vazgeç</button>
+                    <button type="submit" class="btn-primary">Kaydı Kaydet</button>
                 </div>
             </form>
         </div>
