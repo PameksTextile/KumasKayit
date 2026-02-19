@@ -165,10 +165,16 @@ function renderEntryMaster(rows) {
         const diff = r.target_qty - r.incoming_qty;
         const statusClr = r.status === 'Tamamlandı' ? 'status-aktif' : 'status-pasif';
 
+        // İstenen En ve Gramaj için undefined kontrolü eklenmiştir
         tr.innerHTML = `
-            <td>${r.model}</td><td>${r.kumas}</td><td>${r.renk}</td><td>${r.alan}</td>
-            <td>${r.desired_width}</td><td>${r.desired_gsm}</td>
-            <td>${formatNumberTR(r.target_qty)}</td><td>${formatNumberTR(r.incoming_qty)}</td>
+            <td>${r.model || '-'}</td>
+            <td>${r.kumas || '-'}</td>
+            <td>${r.renk || '-'}</td>
+            <td>${r.alan || '-'}</td>
+            <td>${r.desired_width || '-'}</td>
+            <td>${r.desired_gsm || '-'}</td>
+            <td>${formatNumberTR(r.target_qty)}</td>
+            <td>${formatNumberTR(r.incoming_qty)}</td>
             <td style="color:${diff <= 0 ? 'green' : 'red'}">${formatNumberTR(diff)}</td>
             <td>%${formatNumberTR(r.percent)}</td>
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
@@ -213,8 +219,8 @@ async function entryDetail(btn, lineId) {
                     <td>${item.parti_no}</td>
                     <td>${item.top_sayisi}</td>
                     <td style="font-weight:600;">${formatNumberTR(item.gelen_miktar)}</td>
-                    <td>${item.gelen_en}</td>
-                    <td>${item.gelen_gramaj}</td>
+                    <td>${item.gelen_en || '-'}</td>
+                    <td>${item.gelen_gramaj || '-'}</td>
                     <td>${item.kumas_lokasyonu}</td>
                     <td>${item.sevk_tarihi}</td>
                     <td>
