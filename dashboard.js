@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Eksiksiz Sürüm)
+ * dashboard.js - Frontend Uygulama Mantığı (Geri Açma ve Manuel Kapatma Entegre Sürüm)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -163,7 +163,19 @@ function renderEntryMaster(rows) {
         const tr = document.createElement('tr');
         tr.dataset.lineId = r.line_id;
         const diff = r.target_qty - r.incoming_qty;
-        const statusClr = r.status === 'Tamamlandı' ? 'status-aktif' : 'status-pasif';
+        
+        // Statü Renkleri
+        let statusClr = 'status-pasif'; // Varsayılan: Devam Ediyor (Gri/Kırmızı)
+        if (r.status === 'Tamamlandı') statusClr = 'status-aktif'; // Yeşil
+        if (r.status === 'Manuel Kapatıldı') statusClr = 'status-aktif'; // Senin tercihinle yeşil veya ayrı bir stil
+
+        // Statüye Göre Buton Belirleme
+        let closeBtn = '';
+        if (r.status === 'Manuel Kapatıldı') {
+            closeBtn = `<button class="action-btn edit-btn" title="Geri Aç" onclick="entryReopen('${r.line_id}')"><i class="fas fa-undo"></i></button>`;
+        } else if (r.status === 'Devam Ediyor') {
+            closeBtn = `<button class="action-btn success-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>`;
+        }
 
         tr.innerHTML = `
             <td>${r.model || '-'}</td>
@@ -180,7 +192,7 @@ function renderEntryMaster(rows) {
             <td>
                 <div class="action-buttons">
                     <button class="action-btn add-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
-                    <button class="action-btn success-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
+                    ${closeBtn}
                     <button class="action-btn detail-btn" title="Hareketler" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i> Detay</button>
                 </div>
             </td>`;
@@ -242,7 +254,7 @@ async function entryDetail(btn, lineId) {
 }
 
 // ================================================================
-// YENİ GİRİŞ, DÜZENLEME, SİLME VE KAPATMA FONKSİYONLARI
+// YENİ GİRİŞ, DÜZENLEME, SİLME, KAPATMA VE GERİ AÇMA
 // ================================================================
 
 function entryAdd(lineId) {
@@ -283,14 +295,17 @@ if(entryForm) {
     });
 }
 
+/**
+ * PLAN MANUEL KAPATMA
+ */
 async function entryClose(lineId) {
     const { value: text } = await Swal.fire({
-        title: 'Planı Kapat',
+        title: 'Planı Manuel Kapat',
         input: 'textarea',
         inputLabel: 'Kapatma Notu',
         inputPlaceholder: 'Neden kapatıldığını yazınız...',
         showCancelButton: true,
-        confirmButtonText: 'Planı Kapat',
+        confirmButtonText: 'Kapat',
         cancelButtonText: 'Vazgeç'
     });
 
@@ -307,7 +322,36 @@ async function entryClose(lineId) {
             });
             const result = await res.json();
             if (result.success) {
-                Swal.fire('Kapatıldı', 'Plan tamamlandı statüsüne alındı.', 'success');
+                Swal.fire('Kapatıldı', 'Plan manuel olarak kapatıldı.', 'success');
+                await onEntryPlanChange();
+            }
+        } finally { toggleLoading(false); }
+    }
+}
+
+/**
+ * PLAN GERİ AÇMA (UNDO)
+ */
+async function entryReopen(lineId) {
+    const confirm = await Swal.fire({
+        title: 'Plan Geri Açılsın mı?',
+        text: "Plan tekrar 'Devam Ediyor' statüsüne dönecektir.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Geri Aç',
+        cancelButtonText: 'Vazgeç'
+    });
+
+    if (confirm.isConfirmed) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "reopen_plan", line_id: lineId })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Geri Açıldı', 'Plan başarıyla geri açıldı.', 'success');
                 await onEntryPlanChange();
             }
         } finally { toggleLoading(false); }
