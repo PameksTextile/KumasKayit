@@ -1,48 +1,76 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
 
-let allFabrics = [], filteredFabrics = [], currentPage = 1, rowsPerPage = 50;
+// Global Değişkenler
+let allFabrics = [];
+let filteredFabrics = [];
+let currentPage = 1;
+let rowsPerPage = 50;
 let entryCustomersLoaded = false;
 
+/**
+ * Sayfa yüklendiğinde çalışacak ana fonksiyon
+ */
 document.addEventListener('DOMContentLoaded', function() {
+    // Oturum Kontrolü
     const userJson = sessionStorage.getItem('user');
-    if (!userJson) { window.location.href = 'index.html'; return; }
+    if (!userJson) {
+        window.location.href = 'index.html';
+        return;
+    }
 
     const user = JSON.parse(userJson);
     document.getElementById('displayFullName').textContent = user.full_name;
 
+    // Çıkış Butonu
     document.getElementById('logoutBtn').addEventListener('click', () => {
-        sessionStorage.clear(); window.location.href = 'index.html';
+        sessionStorage.clear();
+        window.location.href = 'index.html';
     });
 
+    // İlk açılışta kullanıcı listesini getir
     fetchUsers();
 });
 
+/**
+ * Bölümler arası geçişi sağlar
+ */
 function showSection(name) {
+    // DOM elemanlarını gizle/göster
     document.getElementById('section-users').classList.toggle('d-none', name !== 'users');
     document.getElementById('section-entry').classList.toggle('d-none', name !== 'entry');
     document.getElementById('section-fabrics').classList.toggle('d-none', name !== 'fabrics');
 
+    // Menü aktiflik durumunu güncelle
     document.getElementById('menu-users').classList.toggle('active', name === 'users');
     document.getElementById('menu-entry').classList.toggle('active', name === 'entry');
     document.getElementById('menu-fabrics').classList.toggle('active', name === 'fabrics');
 
-    const title =
-        name === 'users' ? 'Kullanıcı Yönetimi' :
-        name === 'entry' ? 'Kumaş Giriş' :
+    // Başlığı güncelle
+    const title = 
+        name === 'users' ? 'Kullanıcı Yönetimi' : 
+        name === 'entry' ? 'Kumaş Giriş' : 
         'Kumaş Bilgileri';
     document.getElementById('current-page-title').textContent = title;
 
+    // Bölüme özel verileri yükle
     if (name === 'fabrics' && allFabrics.length === 0) loadFabrics();
     if (name === 'entry') initEntryFilters();
 }
 
+/**
+ * Yükleme ekranını yönetir
+ */
 function toggleLoading(show) {
-    document.getElementById('loadingOverlay').classList.toggle('d-none', !show);
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+        loader.classList.toggle('d-none', !show);
+    }
 }
 
-// ============================
-// KUMAŞ GİRİŞ – ÜST FİLTRE + MASTER
-// ============================
+// ================================================================
+// KUMAŞ GİRİŞ BÖLÜMÜ (Müşteri -> Plan -> Özet -> Detay)
+// ================================================================
+
 async function initEntryFilters() {
     const planSel = document.getElementById('entryPlanSelect');
     const badge = document.getElementById('entryHintBadge');
@@ -56,7 +84,6 @@ async function initEntryFilters() {
     planSel.innerHTML = `<option value="">Plan Seçiniz</option>`;
     planSel.disabled = true;
     badge.textContent = 'Müşteri seçin';
-
     tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
 
     resetEntryDetail();
@@ -65,12 +92,17 @@ async function initEntryFilters() {
 async function loadEntryCustomers() {
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_customers" }) });
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "get_customers" }) 
+        });
         const result = await res.json();
-        if (!result.success) throw new Error(result.message || 'Müşteri listesi alınamadı.');
+        
+        if (!result.success) throw new Error(result.message);
 
         const customerSel = document.getElementById('entryCustomerSelect');
         customerSel.innerHTML = `<option value="">Müşteri Seçiniz</option>`;
+        
         result.data.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -78,7 +110,7 @@ async function loadEntryCustomers() {
             customerSel.appendChild(opt);
         });
     } catch (e) {
-        Swal.fire({ icon: 'error', title: 'Hata', text: e.message || 'Bilinmeyen hata' });
+        Swal.fire({ icon: 'error', title: 'Hata', text: 'Müşteriler yüklenemedi: ' + e.message });
     } finally {
         toggleLoading(false);
     }
@@ -95,16 +127,20 @@ async function onEntryCustomerChange() {
     tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
     resetEntryDetail();
 
-    if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
+    if (!customer) {
+        badge.textContent = 'Müşteri seçin';
+        return;
+    }
 
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, {
             method: "POST",
-            body: JSON.stringify({ action: "get_plans_by_customer", customer })
+            body: JSON.stringify({ action: "get_plans_by_customer", customer: customer })
         });
         const result = await res.json();
-        if (!result.success) throw new Error(result.message || 'Plan listesi alınamadı.');
+        
+        if (!result.success) throw new Error(result.message);
 
         result.data.forEach(p => {
             const opt = document.createElement('option');
@@ -116,8 +152,7 @@ async function onEntryCustomerChange() {
         planSel.disabled = false;
         badge.textContent = 'Plan seçin';
     } catch (e) {
-        Swal.fire({ icon: 'error', title: 'Hata', text: e.message || 'Bilinmeyen hata' });
-        badge.textContent = 'Hata';
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
     } finally {
         toggleLoading(false);
     }
@@ -131,10 +166,13 @@ async function onEntryPlanChange() {
 
     resetEntryDetail();
 
-    if (!customer) { badge.textContent = 'Müşteri seçin'; return; }
-    if (!plan) { badge.textContent = 'Plan seçin'; tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`; return; }
+    if (!plan) {
+        badge.textContent = 'Plan seçin';
+        tbody.innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
+        return;
+    }
 
-    badge.textContent = 'Liste yükleniyor...';
+    badge.textContent = 'Yükleniyor...';
     tbody.innerHTML = `<tr><td colspan="12">Yükleniyor...</td></tr>`;
 
     toggleLoading(true);
@@ -144,153 +182,169 @@ async function onEntryPlanChange() {
             body: JSON.stringify({ action: "get_plan_summary", customer, plan })
         });
         const result = await res.json();
-        if (!result.success) throw new Error(result.message || 'Liste alınamadı.');
+        
+        if (!result.success) throw new Error(result.message);
 
         renderEntryMaster(result.data || []);
-        badge.textContent = `Toplam satır: ${result.data.length}`;
+        badge.textContent = `Toplam: ${result.data.length} satır`;
     } catch (e) {
-        Swal.fire({ icon: 'error', title: 'Hata', text: e.message || 'Bilinmeyen hata' });
-        badge.textContent = 'Hata';
-        tbody.innerHTML = `<tr><td colspan="12">Hata oluştu.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12">Hata: ${e.message}</td></tr>`;
     } finally {
         toggleLoading(false);
     }
-}
-
-function formatNumberTR(n, decimals = 2) {
-    if (n === null || n === undefined || n === '') return '';
-    const num = Number(n);
-    if (isNaN(num)) return String(n);
-    return num.toLocaleString('tr-TR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
-function formatRemaining(target, incoming) {
-    const t = Number(target) || 0;
-    const g = Number(incoming) || 0;
-    const diff = t - g;
-    if (diff < 0) return `+${formatNumberTR(Math.abs(diff), 2)} fazla`;
-    return formatNumberTR(diff, 2);
 }
 
 function renderEntryMaster(rows) {
     const tbody = document.getElementById('entryMasterTbody');
     tbody.innerHTML = '';
 
-    if (!rows || rows.length === 0) {
+    if (rows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="12">Kayıt bulunamadı.</td></tr>`;
         return;
     }
 
-    const frag = document.createDocumentFragment();
     rows.forEach(r => {
         const tr = document.createElement('tr');
         tr.dataset.lineId = r.line_id;
 
-        const statusHtml = r.is_manual_closed
-            ? `<span class="status-badge status-aktif">Tamamlandı (Manuel)</span>`
-            : (r.status === 'Tamamlandı'
-                ? `<span class="status-badge status-aktif">Tamamlandı</span>`
-                : `<span class="status-badge status-pasif">Devam Ediyor</span>`);
-
-        const desiredEnText = (r.desired_width === null || r.desired_width === undefined || r.desired_width === '') ? '' : String(r.desired_width);
-        const desiredGsmText = (r.desired_gsm === null || r.desired_gsm === undefined || r.desired_gsm === '') ? '' : String(r.desired_gsm);
+        const statusClass = r.status === 'Tamamlandı' ? 'status-aktif' : 'status-pasif';
+        const remaining = r.target_qty - r.incoming_qty;
 
         tr.innerHTML = `
-          <td>${r.model || ''}</td>
-          <td>${r.kumas || ''}</td>
-          <td>${r.renk || ''}</td>
-          <td>${r.alan || ''}</td>
-          <td>${desiredEnText}</td>
-          <td>${desiredGsmText}</td>
-          <td>${formatNumberTR(r.target_qty, 2)} ${r.unit || ''}</td>
-          <td>${formatNumberTR(r.incoming_qty, 2)} ${r.unit || ''}</td>
-          <td>${formatRemaining(r.target_qty, r.incoming_qty)} ${r.unit || ''}</td>
-          <td>${formatNumberTR(r.percent, 2)}%</td>
-          <td>${statusHtml}</td>
-          <td>
-            <button class="action-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
-            <button class="action-btn" title="Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
-            <button class="action-btn" title="Detay" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
-          </td>
+            <td>${r.model || '-'}</td>
+            <td>${r.kumas || '-'}</td>
+            <td>${r.renk || '-'}</td>
+            <td>${r.alan || '-'}</td>
+            <td>${r.desired_width || '-'}</td>
+            <td>${r.desired_gsm || '-'}</td>
+            <td style="font-weight:600;">${formatNumberTR(r.target_qty)}</td>
+            <td style="color:var(--primary-color); font-weight:600;">${formatNumberTR(r.incoming_qty)}</td>
+            <td style="color:${remaining <= 0 ? 'var(--success)' : 'var(--danger)'}">${formatNumberTR(remaining)}</td>
+            <td>%${formatNumberTR(r.percent)}</td>
+            <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
+                    <button class="action-btn" title="Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
+                    <button class="action-btn" title="Detay" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
+                </div>
+            </td>
         `;
-        frag.appendChild(tr);
+        tbody.appendChild(tr);
     });
+}
 
-    tbody.appendChild(frag);
+/**
+ * Detay Tablosunu Doldurur (Gelen_Kumas hareketleri)
+ */
+async function entryDetail(btn, lineId) {
+    clearSelectedRows();
+    btn.closest('tr').classList.add('row-selected');
+
+    const detailHint = document.getElementById('entryDetailHint');
+    const detailCard = document.getElementById('entryDetailCard');
+    const detailTbody = document.getElementById('entryDetailTbody');
+
+    detailHint.classList.add('d-none');
+    detailCard.classList.remove('d-none');
+    detailTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Detaylar sorgulanıyor...</td></tr>`;
+
+    toggleLoading(true);
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_entry_details", line_id: lineId })
+        });
+        const result = await res.json();
+
+        if (!result.success) throw new Error(result.message);
+
+        detailTbody.innerHTML = '';
+        if (result.data.length === 0) {
+            detailTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Bu satıra ait hareket bulunamadı.</td></tr>`;
+        } else {
+            result.data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.gelis_tarihi}</td>
+                    <td>${item.parti_no}</td>
+                    <td>${item.top_sayisi}</td>
+                    <td style="font-weight:600;">${formatNumberTR(item.gelen_miktar)}</td>
+                    <td>${item.birim}</td>
+                    <td>${item.kumas_lokasyonu}</td>
+                    <td>${item.sevk_tarihi}</td>
+                `;
+                detailTbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        detailTbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);">Hata: ${e.message}</td></tr>`;
+    } finally {
+        toggleLoading(false);
+    }
 }
 
 function clearSelectedRows() {
-    const rows = document.querySelectorAll('#entryMasterTbody tr');
-    rows.forEach(r => r.classList.remove('row-selected'));
+    document.querySelectorAll('#entryMasterTbody tr').forEach(r => r.classList.remove('row-selected'));
 }
 
 function resetEntryDetail() {
     document.getElementById('entryDetailCard').classList.add('d-none');
     document.getElementById('entryDetailHint').classList.remove('d-none');
-    const dt = document.getElementById('entryDetailTbody');
-    if (dt) dt.innerHTML = `<tr><td colspan="7">-</td></tr>`;
     clearSelectedRows();
 }
 
-// Placeholder: 3. adımda gerçek modal+detay yapacağız
-function entryAdd(lineId) {
-    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Yeni giriş ekranını 3. adımda açacağız. line_id=${lineId}` });
-}
-function entryClose(lineId) {
-    Swal.fire({ icon: 'info', title: 'Sonraki adım', text: `Kapatma işlemini 3. adımda Kapatmalar'a yazacağız. line_id=${lineId}` });
-}
-async function entryDetail(btn, lineId) {
-    clearSelectedRows();
-    const tr = btn.closest('tr');
-    if (tr) tr.classList.add('row-selected');
+// ================================================================
+// KULLANICI YÖNETİMİ BÖLÜMÜ
+// ================================================================
 
-    document.getElementById('entryDetailHint').classList.add('d-none');
-    document.getElementById('entryDetailCard').classList.remove('d-none');
-    document.getElementById('entryDetailTbody').innerHTML = `<tr><td colspan="7">Detaylar 3. adımda (line_id=${lineId}).</td></tr>`;
-}
-
-// ======================
-// KULLANICI YÖNETİMİ
-// ======================
 async function fetchUsers() {
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_users" })});
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "get_users" }) 
+        });
         const result = await res.json();
-        if (result.success) renderUserTable(result.data);
-    } finally { toggleLoading(false); }
+        if (result.success) {
+            renderUserTable(result.data);
+        }
+    } catch (e) {
+        console.error("Kullanıcı listesi hatası:", e);
+    } finally {
+        toggleLoading(false);
+    }
 }
 
 function renderUserTable(users) {
     const tbody = document.getElementById('userTableBody');
     tbody.innerHTML = "";
+    
     users.forEach(u => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${u.full_name}</td>
             <td>${u.username}</td>
             <td>${u.mail || ''}</td>
-            <td><span class="badge">${String(u.role || '').toUpperCase()}</span></td>
-            <td><span class="status-badge status-${u.status}">${String(u.status || '').toUpperCase()}</span></td>
+            <td><span class="badge">${String(u.role).toUpperCase()}</span></td>
+            <td><span class="status-badge status-${u.status}">${String(u.status).toUpperCase()}</span></td>
             <td>
-                <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})'><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')"><i class="fas fa-trash"></i></button>
+                <div class="action-buttons">
+                    <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(u)})' title="Düzenle"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn delete-btn" onclick="deleteUser('${u.user_id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                </div>
             </td>`;
         tbody.appendChild(tr);
     });
 }
 
 function openCreateUserModal() {
-    document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı';
+    document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı Oluştur';
+    document.getElementById('userForm').reset();
     document.getElementById('inputUserId').value = '';
-    document.getElementById('inputFullName').value = '';
-    document.getElementById('inputUsername').value = '';
-    document.getElementById('inputPassword').value = '';
-    document.getElementById('inputMail').value = '';
-    document.getElementById('inputRole').value = 'user';
-    document.getElementById('inputStatus').value = 'aktif';
     document.getElementById('userModal').classList.remove('d-none');
 }
+
 function openEditModal(u) {
     document.getElementById('userModalTitle').textContent = 'Kullanıcı Düzenle';
     document.getElementById('inputUserId').value = u.user_id || '';
@@ -302,11 +356,15 @@ function openEditModal(u) {
     document.getElementById('inputStatus').value = u.status || 'aktif';
     document.getElementById('userModal').classList.remove('d-none');
 }
-function closeUserModal() { document.getElementById('userModal').classList.add('d-none'); }
+
+function closeUserModal() {
+    document.getElementById('userModal').classList.add('d-none');
+}
 
 document.getElementById('userForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const payload = {
+    
+    const userData = {
         user_id: document.getElementById('inputUserId').value || null,
         full_name: document.getElementById('inputFullName').value.trim(),
         username: document.getElementById('inputUsername').value.trim(),
@@ -316,42 +374,74 @@ document.getElementById('userForm').addEventListener('submit', async function(e)
         status: document.getElementById('inputStatus').value
     };
 
+    if (!userData.full_name || !userData.username || !userData.password) {
+        Swal.fire('Uyarı', 'Lütfen zorunlu alanları doldurun.', 'warning');
+        return;
+    }
+
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data: payload })});
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "save_user", data: userData })
+        });
         const result = await res.json();
-        if (!result.success) throw new Error(result.message || 'Kaydedilemedi');
-        closeUserModal();
-        await fetchUsers();
-        Swal.fire({ icon: 'success', title: 'Başarılı', text: result.message || 'Kaydedildi' });
-    } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Hata', text: err.message || 'Bilinmeyen hata' });
-    } finally { toggleLoading(false); }
+        
+        if (result.success) {
+            Swal.fire('Başarılı', result.message, 'success');
+            closeUserModal();
+            fetchUsers();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (e) {
+        Swal.fire('Hata', e.message, 'error');
+    } finally {
+        toggleLoading(false);
+    }
 });
 
 async function deleteUser(userId) {
-    const ok = await Swal.fire({ icon: 'warning', title: 'Silinsin mi?', text: 'Kullanıcı silinecek.', showCancelButton: true, confirmButtonText: 'Evet', cancelButtonText: 'Vazgeç' });
-    if (!ok.isConfirmed) return;
+    const confirm = await Swal.fire({
+        title: 'Emin misiniz?',
+        text: "Kullanıcı durumu 'silindi' olarak işaretlenecektir.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'İptal'
+    });
 
-    toggleLoading(true);
-    try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_user", user_id: userId })});
-        const result = await res.json();
-        if (!result.success) throw new Error(result.message || 'Silinemedi');
-        await fetchUsers();
-        Swal.fire({ icon: 'success', title: 'Başarılı', text: result.message || 'Silindi' });
-    } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Hata', text: err.message || 'Bilinmeyen hata' });
-    } finally { toggleLoading(false); }
+    if (confirm.isConfirmed) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "delete_user", user_id: userId })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Silindi', result.message, 'success');
+                fetchUsers();
+            }
+        } catch (e) {
+            Swal.fire('Hata', 'İşlem başarısız.', 'error');
+        } finally {
+            toggleLoading(false);
+        }
+    }
 }
 
-// ======================
-// KUMAŞ BİLGİLERİ (mevcut)
-// ======================
+// ================================================================
+// KUMAŞ BİLGİLERİ (KATALOG) BÖLÜMÜ
+// ================================================================
+
 async function loadFabrics() {
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_fabric_catalog" })});
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_fabric_catalog" })
+        });
         const result = await res.json();
         if (result.success) {
             allFabrics = result.data || [];
@@ -359,13 +449,18 @@ async function loadFabrics() {
             currentPage = 1;
             renderFabrics();
         }
-    } finally { toggleLoading(false); }
+    } catch (e) {
+        console.error("Katalog yükleme hatası:", e);
+    } finally {
+        toggleLoading(false);
+    }
 }
 
 function filterFabrics() {
-    const q = (document.getElementById('fabricSearch').value || '').toLowerCase().trim();
-    filteredFabrics = allFabrics.filter(f =>
-        String(f.code || '').toLowerCase().includes(q) || String(f.name || '').toLowerCase().includes(q)
+    const query = document.getElementById('fabricSearch').value.toLowerCase().trim();
+    filteredFabrics = allFabrics.filter(f => 
+        String(f.code).toLowerCase().includes(query) || 
+        String(f.name).toLowerCase().includes(query)
     );
     currentPage = 1;
     renderFabrics();
@@ -379,7 +474,7 @@ function renderFabrics() {
     const pageItems = filteredFabrics.slice(start, start + rowsPerPage);
 
     if (pageItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5">Kayıt bulunamadı.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5">Aranan kriterde kumaş bulunamadı.</td></tr>`;
     } else {
         pageItems.forEach(f => {
             const tr = document.createElement('tr');
@@ -394,9 +489,7 @@ function renderFabrics() {
         });
     }
 
-    const badge = document.getElementById('totalFabricsBadge');
-    if (badge) badge.textContent = `Toplam: ${filteredFabrics.length}`;
-
+    document.getElementById('totalFabricsBadge').textContent = `Toplam: ${filteredFabrics.length}`;
     renderPagination();
 }
 
@@ -404,33 +497,53 @@ function renderPagination() {
     const container = document.getElementById('pagination');
     if (!container) return;
 
-    const totalPages = Math.max(1, Math.ceil(filteredFabrics.length / rowsPerPage));
+    const totalPages = Math.ceil(filteredFabrics.length / rowsPerPage) || 1;
     container.innerHTML = '';
 
-    const prev = document.createElement('button');
-    prev.className = 'btn-secondary';
-    prev.disabled = currentPage <= 1;
-    prev.textContent = 'Önceki';
-    prev.onclick = () => { currentPage--; renderFabrics(); };
+    // Önceki Butonu
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn-secondary';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => { currentPage--; renderFabrics(); };
 
-    const next = document.createElement('button');
-    next.className = 'btn-secondary';
-    next.disabled = currentPage >= totalPages;
-    next.textContent = 'Sonraki';
-    next.onclick = () => { currentPage++; renderFabrics(); };
-
+    // Bilgi
     const info = document.createElement('span');
     info.className = 'badge';
     info.textContent = `${currentPage} / ${totalPages}`;
 
-    container.appendChild(prev);
+    // Sonraki Butonu
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn-secondary';
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => { currentPage++; renderFabrics(); };
+
+    container.appendChild(prevBtn);
     container.appendChild(info);
-    container.appendChild(next);
+    container.appendChild(nextBtn);
+}
+
+// ================================================================
+// YARDIMCI ARAÇLAR & PLACEHOLDERS
+// ================================================================
+
+function formatNumberTR(n) {
+    if (n === null || n === undefined || n === '') return '0,00';
+    const num = Number(n);
+    if (isNaN(num)) return n;
+    return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function entryAdd(id) {
+    Swal.fire('Bilgi', 'Yeni kumaş girişi (Gelen_Kumas kaydı) özelliği bir sonraki adımda eklenecektir.', 'info');
+}
+
+function entryClose(id) {
+    Swal.fire('Bilgi', 'Plan kapatma özelliği bir sonraki adımda eklenecektir.', 'info');
 }
 
 async function handleFileUpload(input) {
-    const file = input.files && input.files[0];
-    if (!file) return;
-    Swal.fire({ icon: 'info', title: 'Bilgi', text: 'TXT yükleme akışı bu adımda değiştirilmedi.' });
+    Swal.fire('Bilgi', 'ERP TXT senkronizasyon altyapısı hazır ancak dosya okuma mantığı bir sonraki adımda aktif edilecektir.', 'info');
     input.value = '';
 }
