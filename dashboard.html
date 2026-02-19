@@ -33,7 +33,6 @@
                 </div>
             </div>
 
-            <!-- USERS -->
             <div id="section-users">
                 <div class="card">
                     <div class="card-header-row">
@@ -63,7 +62,6 @@
                 </div>
             </div>
 
-            <!-- KUMAŞ GİRİŞ -->
             <div id="section-entry" class="d-none">
                 <div class="card">
                     <div class="entry-filter-header">
@@ -87,7 +85,6 @@
                     </div>
                 </div>
 
-                <!-- MASTER TABLE -->
                 <div class="card table-card mt-3">
                     <table class="data-table" id="entryMasterTable">
                         <thead>
@@ -112,7 +109,6 @@
                     </table>
                 </div>
 
-                <!-- DETAIL PLACEHOLDER (3. adımda gerçek tablo yapacağız) -->
                 <div class="card mt-3">
                     <div class="badge">Gelen Kumaş Hareketleri</div>
                     <div style="margin-top:10px;color:#6b7280;font-size:13px;" id="entryDetailHint">
@@ -128,21 +124,20 @@
                                         <th>Gelen Miktar</th>
                                         <th>Birim</th>
                                         <th>Gelen En (cm)</th>
-                                        <th>Gelen Gramaj (gr/m²)</th>
-                                        <th>Kumaş Lokasyonu</th>
+                                        <th>Gelen Gramaj</th>
+                                        <th>Lokasyon</th>
                                         <th>Sevk Tarihi</th>
                                         <th>İşlem</th>
                                     </tr>
                                 </thead>
                             <tbody id="entryDetailTbody">
-                                <tr><td colspan="7">-</td></tr>
+                                <tr><td colspan="10">-</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- FABRICS -->
             <div id="section-fabrics" class="d-none">
                 <div class="card">
                     <div class="card-header-row">
@@ -179,18 +174,15 @@
                     <div id="pagination" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;"></div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <!-- USER MODAL -->
     <div id="userModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2000;">
         <div class="card" style="width:520px;max-width:95vw;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <div style="font-weight:800;" id="userModalTitle">Kullanıcı</div>
                 <button class="action-btn" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
             </div>
-
             <form id="userForm">
                 <input type="hidden" id="inputUserId">
                 <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -203,7 +195,6 @@
                         <input id="inputUsername" type="text" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
                     </div>
                 </div>
-
                 <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
                     <div class="form-group" style="flex:1;min-width:220px;">
                         <label>Şifre</label>
@@ -214,7 +205,6 @@
                         <input id="inputMail" type="email" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
                     </div>
                 </div>
-
                 <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
                     <div class="form-group" style="flex:1;min-width:220px;">
                         <label>Rol</label>
@@ -231,10 +221,56 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
                     <button type="button" class="btn-secondary" onclick="closeUserModal()">İptal</button>
                     <button type="submit" class="btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editEntryModal" class="modal d-none" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:center;padding:14px;z-index:2100;">
+        <div class="card" style="width:550px;max-width:95vw;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <div style="font-weight:800;">Hareket Kaydını Düzenle</div>
+                <button class="action-btn" onclick="closeEditEntryModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="editEntryForm">
+                <input type="hidden" id="editRowIndex">
+                <input type="hidden" id="editLineId">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Geliş Tarihi</label>
+                        <input type="date" id="editGelisTarihi" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Parti No</label>
+                        <input type="text" id="editPartiNo" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Top Sayısı</label>
+                        <input type="number" id="editTopSayisi" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen Miktar</label>
+                        <input type="number" step="0.01" id="editGelenMiktar" required style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen En (cm)</label>
+                        <input type="number" step="0.1" id="editGelenEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:12px; font-weight:700;">Gelen Gramaj (gr/m²)</label>
+                        <input type="number" step="0.1" id="editGelenGramaj" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label style="font-size:12px; font-weight:700;">Kullanılabilir En</label>
+                        <input type="number" step="0.1" id="editKullanilabilirEn" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;">
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                    <button type="button" class="btn-secondary" onclick="closeEditEntryModal()">Vazgeç</button>
+                    <button type="submit" class="btn-primary">Değişiklikleri Kaydet</button>
                 </div>
             </form>
         </div>
