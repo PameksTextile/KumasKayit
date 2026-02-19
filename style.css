@@ -824,8 +824,8 @@ a:hover {
   pointer-events: none;
 }
 
-/* Tooltip Styles */
-.action-btn::after {
+/* Tooltip Styles - Sadece title attribute varsa göster */
+.action-btn[title]:not([title=""])::after {
   content: attr(title);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -845,8 +845,8 @@ a:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* Tooltip Arrow */
-.action-btn::before {
+/* Tooltip Arrow - Sadece title attribute varsa göster */
+.action-btn[title]:not([title=""])::before {
   content: '';
   position: absolute;
   bottom: calc(100% + 2px);
@@ -860,8 +860,8 @@ a:hover {
   z-index: 1000;
 }
 
-.action-btn:hover::after,
-.action-btn:hover::before {
+.action-btn[title]:not([title=""]):hover::after,
+.action-btn[title]:not([title=""]):hover::before {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
@@ -1306,14 +1306,14 @@ a:hover {
     padding: 12px;
   }
   
-  .action-btn::after {
+  .action-btn[title]:not([title=""])::after {
     font-size: 11px;
     padding: 5px 10px;
   }
   
   /* Mobilde tooltip'i tıklamada göster */
-  .action-btn:active::after,
-  .action-btn:active::before {
+  .action-btn[title]:not([title=""]):active::after,
+  .action-btn[title]:not([title=""]):active::before {
     opacity: 1;
     transform: translateX(-50%) scale(1);
   }
