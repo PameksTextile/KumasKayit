@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Full Audit & Searchable UI)
+ * dashboard.js - Frontend Uygulama Mantığı (Gelişmiş Arama & Audit Log Sürümü)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -10,6 +10,10 @@ let filteredFabrics = [];
 let currentPage = 1;
 let rowsPerPage = 50;
 let entryCustomersLoaded = false;
+
+// Dropdown Veri Havuzu
+let currentCustomerList = [];
+let currentPlanList = [];
 
 /**
  * Sayfa Yükleme ve Oturum Kontrolü
@@ -27,6 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('logoutBtn').addEventListener('click', () => {
         sessionStorage.clear();
         window.location.href = 'index.html';
+    });
+
+    // Sayfa dışına tıklandığında dropdownları kapat
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.searchable-select')) {
+            hideAllDropdowns();
+        }
     });
 
     fetchUsers();
@@ -72,43 +83,57 @@ function showSection(name) {
 }
 
 // ================================================================
-// 1. KUMAŞ GİRİŞ (SEARCHABLE UI & AUDIT LOG)
+// 1. KUMAŞ GİRİŞ (CUSTOM SEARCHABLE SELECT MANTIĞI)
 // ================================================================
+
+/**
+ * Dropdown Görünürlük Kontrolü
+ */
+function toggleDropdown(id, show) {
+    const el = document.getElementById(id);
+    if (show) {
+        hideAllDropdowns();
+        el.classList.remove('d-none');
+    } else {
+        el.classList.add('d-none');
+    }
+}
+
+function hideAllDropdowns() {
+    document.querySelectorAll('.dropdown-list').forEach(d => d.classList.add('d-none'));
+}
+
+/**
+ * Dropdown İçinde Arama Filtresi
+ */
+function filterDropdown(dropdownId, query) {
+    const div = document.getElementById(dropdownId);
+    const options = div.getElementsByClassName('dropdown-item');
+    const q = query.toLowerCase();
+    
+    for (let i = 0; i < options.length; i++) {
+        const txt = options[i].textContent.toLowerCase();
+        options[i].style.display = txt.includes(q) ? "" : "none";
+    }
+}
 
 async function initEntryFilters() {
     if (!entryCustomersLoaded) {
         await loadEntryCustomers();
         entryCustomersLoaded = true;
     }
-    resetEntryUI();
-}
-
-function resetEntryUI() {
-    document.getElementById('customerList').innerHTML = "";
-    document.getElementById('planList').innerHTML = "";
-    document.getElementById('entryCustomerInput').value = "";
-    document.getElementById('entryPlanInput').value = "";
-    document.getElementById('entryPlanInput').disabled = true;
-    document.getElementById('entryHintBadge').textContent = 'Müşteri seçin';
-    document.getElementById('entryMasterTbody').innerHTML = `<tr><td colspan="12">Müşteri ve Plan seçiniz.</td></tr>`;
-    resetEntryDetail();
 }
 
 /**
- * Müşterileri Datalist'e Yükle (Arama Fonksiyonu)
+ * Müşterileri Getir ve Dropdown'u Doldur
  */
 async function loadEntryCustomers() {
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_customers" }) });
         const result = await res.json();
-        const list = document.getElementById('customerList');
-        list.innerHTML = "";
-        result.data.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            list.appendChild(opt);
-        });
+        currentCustomerList = result.data || [];
+        renderDropdown('customerDropdown', currentCustomerList, selectCustomer);
     } catch {
         Swal.fire('Hata', 'Müşteriler yüklenemedi.', 'error');
     } finally {
@@ -116,52 +141,65 @@ async function loadEntryCustomers() {
     }
 }
 
+function renderDropdown(id, data, onSelect) {
+    const container = document.getElementById(id);
+    container.innerHTML = "";
+    data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'dropdown-item';
+        div.textContent = item;
+        div.onclick = () => {
+            onSelect(item);
+            toggleDropdown(id, false);
+        };
+        container.appendChild(div);
+    });
+}
+
 /**
- * Müşteri Seçilince Planları Datalist'e Yükle
+ * Müşteri Seçimi Callback
  */
-async function onEntryCustomerChange() {
-    const customer = document.getElementById('entryCustomerInput').value;
+async function selectCustomer(val) {
+    const input = document.getElementById('entryCustomerInput');
+    input.value = val;
+    
     const planInput = document.getElementById('entryPlanInput');
-    const planList = document.getElementById('planList');
+    const planListDiv = document.getElementById('planDropdown');
     
     planInput.value = "";
     planInput.disabled = true;
-    planList.innerHTML = "";
-
-    if (!customer) return;
+    planListDiv.innerHTML = "";
+    document.getElementById('entryMasterTbody').innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
 
     toggleLoading(true);
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_plans_by_customer", customer }) });
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_plans_by_customer", customer: val }) });
         const result = await res.json();
-        result.data.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p;
-            planList.appendChild(opt);
-        });
+        currentPlanList = result.data || [];
+        renderDropdown('planDropdown', currentPlanList, selectPlan);
         planInput.disabled = false;
-        document.getElementById('entryHintBadge').textContent = 'Plan no yazın...';
+        document.getElementById('entryHintBadge').textContent = 'Müşteri seçildi, plan bekliyor...';
     } finally {
         toggleLoading(false);
     }
 }
 
 /**
- * Plan Seçilince Tabloyu Getir
+ * Plan Seçimi Callback
  */
-async function onEntryPlanChange() {
+async function selectPlan(val) {
+    const planInput = document.getElementById('entryPlanInput');
+    planInput.value = val;
+    
     const customer = document.getElementById('entryCustomerInput').value;
-    const plan = document.getElementById('entryPlanInput').value;
     const tbody = document.getElementById('entryMasterTbody');
     
-    if (!plan) return;
-
     tbody.innerHTML = `<tr><td colspan="12">Yükleniyor...</td></tr>`;
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { 
             method: "POST", 
-            body: JSON.stringify({ action: "get_plan_summary", customer, plan }) 
+            body: JSON.stringify({ action: "get_plan_summary", customer, plan: val }) 
         });
         const result = await res.json();
         renderEntryMaster(result.data || []);
@@ -214,7 +252,7 @@ function renderEntryMaster(rows) {
 }
 
 /**
- * Detay Tablosu (UX Fix: Spinner properly closed)
+ * Detay Tablosu (Spinner her durumda kapanır)
  */
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
@@ -235,7 +273,7 @@ async function entryDetail(btn, lineId) {
         const result = await res.json();
         tbody.innerHTML = '';
         if (!result.data || result.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Hareket bulunamadı.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Henüz hareket yok.</td></tr>`;
         } else {
             result.data.forEach(item => {
                 const tr = document.createElement('tr');
@@ -276,7 +314,7 @@ function entryAdd(lineId) {
 
 function closeEntryModal() { document.getElementById('entryModal').classList.add('d-none'); }
 
-// Yeni Giriş Formu (Audit Log: Oluşturan Bilgisi)
+// Yeni Kayıt (Oluşturan Bilgisiyle)
 document.getElementById('entryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -290,16 +328,16 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
         gelen_gramaj: document.getElementById('inGelenGramaj').value,
         kullanilabilir_en: document.getElementById('inKullanilabilirEn').value,
         lokasyon: document.getElementById('inLokasyon').value,
-        user_name: user.full_name // AUDIT
+        user_name: user.full_name
     };
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_entry", data }) });
         const result = await res.json();
         if (result.success) {
-            Swal.fire('Başarılı', 'Kayıt ve Audit Log oluşturuldu.', 'success');
+            Swal.fire('Başarılı', 'Yeni kayıt Audit Log ile kaydedildi.', 'success');
             closeEntryModal();
-            await onEntryPlanChange();
+            await selectPlan(document.getElementById('entryPlanInput').value); // Tabloyu tazele
         }
     } finally { toggleLoading(false); }
 });
@@ -307,6 +345,7 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
 function editEntry(item) {
     document.getElementById('editRowIndex').value = item.row_index;
     document.getElementById('editLineId').value = document.querySelector('.row-selected').dataset.lineId;
+    
     if(item.gelis_tarihi && item.gelis_tarihi !== "-") {
         const parts = item.gelis_tarihi.split('.');
         document.getElementById('editGelisTarihi').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -319,20 +358,18 @@ function editEntry(item) {
     document.getElementById('editKullanilabilirEn').value = item.kullanilabilir_en === "-" ? "" : item.kullanilabilir_en;
     document.getElementById('editLokasyon').value = item.kumas_lokasyonu === "-" ? "" : item.kumas_lokasyonu;
     
-    // Sevk Tarihi Düzenleme
     if(item.sevk_tarihi && item.sevk_tarihi !== "-") {
         const partsS = item.sevk_tarihi.split('.');
         document.getElementById('editSevkTarihi').value = `${partsS[2]}-${partsS[1]}-${partsS[0]}`;
     } else {
         document.getElementById('editSevkTarihi').value = "";
     }
-
     document.getElementById('editEntryModal').classList.remove('d-none');
 }
 
 function closeEditEntryModal() { document.getElementById('editEntryModal').classList.add('d-none'); }
 
-// Güncelleme Formu (Audit Log: Düzenleyen Bilgisi + Yeni Alanlar)
+// Güncelleme (Düzenleyen Bilgisiyle)
 document.getElementById('editEntryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -348,33 +385,24 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
         kullanilabilir_en: document.getElementById('editKullanilabilirEn').value,
         lokasyon: document.getElementById('editLokasyon').value,
         sevk_tarihi: document.getElementById('editSevkTarihi').value,
-        user_name: user.full_name // AUDIT
+        user_name: user.full_name
     };
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "update_entry", data }) });
         const result = await res.json();
         if (result.success) {
-            Swal.fire('Güncellendi', 'Veriler ve Audit Log güncellendi.', 'success');
+            Swal.fire('Güncellendi', 'Düzenleyen bilgisi işlendi.', 'success');
             closeEditEntryModal();
-            await onEntryPlanChange();
+            await selectPlan(document.getElementById('entryPlanInput').value);
             const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
             if(targetBtn) targetBtn.click();
         }
     } finally { toggleLoading(false); }
 });
 
-/**
- * Manuel Kapatma
- */
 async function entryClose(lineId) {
-    const { value: text } = await Swal.fire({
-        title: 'Planı Manuel Kapat',
-        input: 'textarea',
-        inputLabel: 'Kapatma Notu',
-        inputPlaceholder: 'Neden kapatıldığını yazınız...',
-        showCancelButton: true
-    });
+    const { value: text } = await Swal.fire({ title: 'Planı Manuel Kapat', input: 'textarea', inputLabel: 'Kapatma Notu', showCancelButton: true });
     if (text) {
         const user = JSON.parse(sessionStorage.getItem('user'));
         toggleLoading(true);
@@ -384,16 +412,13 @@ async function entryClose(lineId) {
                 body: JSON.stringify({ action: "close_plan", data: { line_id: lineId, note: text, user_id: user.user_id, user_name: user.full_name } })
             });
             if ((await res.json()).success) {
-                Swal.fire('Kapatıldı', 'Plan manuel statüye alındı.', 'success');
-                await onEntryPlanChange();
+                Swal.fire('Kapatıldı', 'Plan manuel kapatıldı.', 'success');
+                await selectPlan(document.getElementById('entryPlanInput').value);
             }
         } finally { toggleLoading(false); }
     }
 }
 
-/**
- * Geri Açma
- */
 async function entryReopen(lineId) {
     const confirm = await Swal.fire({ title: 'Plan Geri Açılsın mı?', icon: 'question', showCancelButton: true });
     if (confirm.isConfirmed) {
@@ -401,8 +426,8 @@ async function entryReopen(lineId) {
         try {
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "reopen_plan", line_id: lineId }) });
             if ((await res.json()).success) {
-                Swal.fire('Geri Açıldı', 'Plan tekrar aktif.', 'success');
-                await onEntryPlanChange();
+                Swal.fire('Geri Açıldı', 'Plan aktif statüde.', 'success');
+                await selectPlan(document.getElementById('entryPlanInput').value);
             }
         } finally { toggleLoading(false); }
     }
@@ -416,7 +441,7 @@ async function deleteEntry(rowIdx, lineId) {
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_entry", row_idx: rowIdx }) });
             if ((await res.json()).success) {
                 Swal.fire('Silindi', 'Kayıt silindi.', 'success');
-                await onEntryPlanChange();
+                await selectPlan(document.getElementById('entryPlanInput').value);
                 const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
                 if(targetBtn) targetBtn.click();
             }
@@ -428,7 +453,7 @@ function clearSelectedRows() { document.querySelectorAll('#entryMasterTbody tr')
 function resetEntryDetail() { document.getElementById('entryDetailCard').classList.add('d-none'); document.getElementById('entryDetailHint').classList.remove('d-none'); clearSelectedRows(); }
 
 // ================================================================
-// 2. KULLANICI YÖNETİMİ & KATALOG (DEĞİŞMEDİ - STABİL)
+// 2. KULLANICI YÖNETİMİ & KATALOG
 // ================================================================
 
 async function fetchUsers() {
@@ -457,7 +482,7 @@ document.getElementById('userForm').addEventListener('submit', async function(e)
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data }) });
-        if ((await res.json()).success) { Swal.fire('Başarılı', 'Kullanıcı kaydedildi.', 'success'); closeUserModal(); fetchUsers(); }
+        if ((await res.json()).success) { Swal.fire('Başarılı', 'Kayıt tamam.', 'success'); closeUserModal(); fetchUsers(); }
     } finally { toggleLoading(false); }
 });
 
@@ -493,7 +518,7 @@ function renderFabrics() {
     tbody.innerHTML = '';
     const start = (currentPage - 1) * rowsPerPage;
     const items = filteredFabrics.slice(start, start + rowsPerPage);
-    if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="5">Kayıt bulunamadı.</td></tr>`; } 
+    if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="5">Kayıt yok.</td></tr>`; } 
     else { items.forEach(f => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${f.code}</td><td>${f.name}</td><td>${f.width}</td><td>${f.gsm}</td><td>${f.unit}</td>`; tbody.appendChild(tr); }); }
     document.getElementById('totalFabricsBadge').textContent = `Toplam: ${filteredFabrics.length}`;
     renderPagination();
@@ -510,7 +535,7 @@ function handleFileUpload(input) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async function(e) {
-        Swal.fire('Bilgi', 'ERP Yükleme fonksiyonun tetiklendi.', 'info');
+        Swal.fire('Bilgi', 'ERP Yükleme başlatıldı.', 'info');
     };
     reader.readAsText(file);
 }
