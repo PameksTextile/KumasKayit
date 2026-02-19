@@ -68,15 +68,28 @@
                         <span class="badge" id="entryHintBadge">Müşteri seçin</span>
                     </div>
                     <div class="entry-filter-row">
-                        <div class="filter-group">
-                            <label for="entryCustomerInput">Müşteri (Arayın)</label>
-                            <input list="customerList" id="entryCustomerInput" placeholder="Müşteri adı yazın..." onchange="onEntryCustomerChange()" class="search-input">
-                            <datalist id="customerList"></datalist>
+                        <div class="filter-group custom-select-container">
+                            <label>Müşteri (Seçmek için yazın)</label>
+                            <div class="searchable-select" id="customerSearchSelect">
+                                <div class="select-input-wrapper">
+                                    <input type="text" id="entryCustomerInput" placeholder="Müşteri Ara..." onfocus="toggleDropdown('customerDropdown', true)" onkeyup="filterDropdown('customerDropdown', this.value)">
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div id="customerDropdown" class="dropdown-list d-none">
+                                    </div>
+                            </div>
                         </div>
-                        <div class="filter-group">
-                            <label for="entryPlanInput">Plan (Arayın)</label>
-                            <input list="planList" id="entryPlanInput" placeholder="Plan no yazın..." onchange="onEntryPlanChange()" disabled class="search-input">
-                            <datalist id="planList"></datalist>
+
+                        <div class="filter-group custom-select-container">
+                            <label>Plan (Seçmek için yazın)</label>
+                            <div class="searchable-select" id="planSearchSelect">
+                                <div class="select-input-wrapper">
+                                    <input type="text" id="entryPlanInput" placeholder="Plan Ara..." disabled onfocus="toggleDropdown('planDropdown', true)" onkeyup="filterDropdown('planDropdown', this.value)">
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div id="planDropdown" class="dropdown-list d-none">
+                                    </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -108,7 +121,7 @@
                 <div class="card mt-3">
                     <div class="badge">Gelen Kumaş Hareketleri</div>
                     <div style="margin-top:10px;color:#6b7280;font-size:13px;" id="entryDetailHint">
-                        Detay butonuna basınca bu bölüm seçilen kumaşın tüm hareketlerini listeleyecektir.
+                        Detay butonuna basınca bu bölüm seçilen kumaşın hareketlerini gösterecek.
                     </div>
                     <div class="card table-card mt-3 d-none" id="entryDetailCard">
                         <table class="data-table">
@@ -174,7 +187,7 @@
     <div id="userModal" class="modal d-none">
         <div class="card modal-content" style="width:520px;">
             <div class="modal-header">
-                <div style="font-weight:800;" id="userModalTitle">Kullanıcı İşlemleri</div>
+                <div style="font-weight:800;" id="userModalTitle">Kullanıcı</div>
                 <button class="action-btn" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="userForm">
