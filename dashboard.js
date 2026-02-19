@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Loading Ekranı Kontrolü (UX Fix: Spinner mekanizması)
+ * Loading Ekranı Kontrolü (UX Fix: Spinner mekanizması her zaman temizlenir)
  */
 function toggleLoading(show) {
     const loader = document.getElementById('loadingOverlay');
@@ -83,19 +83,18 @@ function showSection(name) {
 }
 
 // ================================================================
-// 1. KUMAŞ GİRİŞ (CUSTOM SEARCHABLE SELECT MANTIĞI)
+// 1. KUMAŞ GİRİŞ (CUSTOM SEARCHABLE DROPDOWN MANTIĞI)
 // ================================================================
 
 /**
  * Dropdown Görünürlük Kontrolü
  */
 function toggleDropdown(id, show) {
-    const el = document.getElementById(id);
     if (show) {
         hideAllDropdowns();
-        el.classList.remove('d-none');
+        document.getElementById(id).classList.remove('d-none');
     } else {
-        el.classList.add('d-none');
+        document.getElementById(id).classList.add('d-none');
     }
 }
 
@@ -104,7 +103,7 @@ function hideAllDropdowns() {
 }
 
 /**
- * Dropdown İçinde Arama Filtresi
+ * Dropdown İçinde Arama Filtresi (Anlık Süzme)
  */
 function filterDropdown(dropdownId, query) {
     const div = document.getElementById(dropdownId);
@@ -125,7 +124,7 @@ async function initEntryFilters() {
 }
 
 /**
- * Müşterileri Getir ve Dropdown'u Doldur
+ * Müşterileri Getir ve Özel Dropdown'u Doldur
  */
 async function loadEntryCustomers() {
     toggleLoading(true);
@@ -141,13 +140,22 @@ async function loadEntryCustomers() {
     }
 }
 
+/**
+ * Dropdown Liste Oluşturucu (Modern Kart Görünümü)
+ */
 function renderDropdown(id, data, onSelect) {
     const container = document.getElementById(id);
     container.innerHTML = "";
+    
+    if (data.length === 0) {
+        container.innerHTML = `<div class="dropdown-item" style="color:var(--text-muted); pointer-events:none;">Sonuç yok</div>`;
+        return;
+    }
+
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'dropdown-item';
-        div.textContent = item;
+        div.innerHTML = `<i class="far fa-circle" style="font-size:8px; margin-right:8px; opacity:0.4;"></i> ${item}`;
         div.onclick = () => {
             onSelect(item);
             toggleDropdown(id, false);
@@ -157,18 +165,17 @@ function renderDropdown(id, data, onSelect) {
 }
 
 /**
- * Müşteri Seçimi Callback
+ * Müşteri Seçimi İşlemi
  */
 async function selectCustomer(val) {
-    const input = document.getElementById('entryCustomerInput');
-    input.value = val;
+    document.getElementById('entryCustomerInput').value = val;
     
     const planInput = document.getElementById('entryPlanInput');
-    const planListDiv = document.getElementById('planDropdown');
+    const planDropdown = document.getElementById('planDropdown');
     
     planInput.value = "";
     planInput.disabled = true;
-    planListDiv.innerHTML = "";
+    planDropdown.innerHTML = "";
     document.getElementById('entryMasterTbody').innerHTML = `<tr><td colspan="12">Plan seçiniz.</td></tr>`;
 
     toggleLoading(true);
@@ -178,23 +185,21 @@ async function selectCustomer(val) {
         currentPlanList = result.data || [];
         renderDropdown('planDropdown', currentPlanList, selectPlan);
         planInput.disabled = false;
-        document.getElementById('entryHintBadge').textContent = 'Müşteri seçildi, plan bekliyor...';
+        document.getElementById('entryHintBadge').textContent = 'Müşteri seçildi, plan bekleniyor...';
     } finally {
         toggleLoading(false);
     }
 }
 
 /**
- * Plan Seçimi Callback
+ * Plan Seçimi ve Tabloyu Getirme
  */
 async function selectPlan(val) {
-    const planInput = document.getElementById('entryPlanInput');
-    planInput.value = val;
-    
+    document.getElementById('entryPlanInput').value = val;
     const customer = document.getElementById('entryCustomerInput').value;
     const tbody = document.getElementById('entryMasterTbody');
     
-    tbody.innerHTML = `<tr><td colspan="12">Yükleniyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12">Veriler hazırlanıyor...</td></tr>`;
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { 
@@ -221,29 +226,29 @@ function renderEntryMaster(rows) {
         let statusClr = 'status-pasif';
         if (r.status === 'Tamamlandı' || r.status === 'Manuel Kapatıldı') statusClr = 'status-aktif';
 
-        let actionBtns = '';
+        let actions = '';
         if (r.status === 'Manuel Kapatıldı') {
-            actionBtns = `<button class="action-btn edit-btn" title="Geri Aç" onclick="entryReopen('${r.line_id}')"><i class="fas fa-undo"></i></button>`;
+            actions = `<button class="action-btn edit-btn" title="Geri Aç" onclick="entryReopen('${r.line_id}')"><i class="fas fa-undo"></i></button>`;
         } else if (r.status === 'Devam Ediyor') {
-            actionBtns = `<button class="action-btn success-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>`;
+            actions = `<button class="action-btn success-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>`;
         }
 
         tr.innerHTML = `
-            <td>${r.model || '-'}</td>
+            <td style="font-weight:600;">${r.model || '-'}</td>
             <td>${r.kumas || '-'}</td>
             <td>${r.renk || '-'}</td>
             <td>${r.alan || '-'}</td>
             <td>${r.desired_width || '-'}</td>
             <td>${r.desired_gsm || '-'}</td>
-            <td>${formatNumberTR(r.target_qty)}</td>
-            <td>${formatNumberTR(r.incoming_qty)}</td>
-            <td style="color:${diff <= 0 ? 'green' : 'red'}">${formatNumberTR(diff)}</td>
+            <td style="color:var(--text-muted);">${formatNumberTR(r.target_qty)}</td>
+            <td style="font-weight:700;">${formatNumberTR(r.incoming_qty)}</td>
+            <td style="color:${diff <= 0 ? 'var(--success-text)' : 'var(--danger-text)'}">${formatNumberTR(diff)}</td>
             <td>%${formatNumberTR(r.percent)}</td>
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn add-btn" title="Yeni Giriş" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
-                    ${actionBtns}
+                    ${actions}
                     <button class="action-btn detail-btn" title="Hareketler" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i> Detay</button>
                 </div>
             </td>`;
@@ -252,7 +257,7 @@ function renderEntryMaster(rows) {
 }
 
 /**
- * Detay Tablosu (Spinner her durumda kapanır)
+ * Hareket Detaylarını Listele
  */
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
@@ -262,7 +267,7 @@ async function entryDetail(btn, lineId) {
     const card = document.getElementById('entryDetailCard');
     const tbody = document.getElementById('entryDetailTbody');
     card.classList.remove('d-none');
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Yükleniyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Detaylar yükleniyor...</td></tr>`;
 
     toggleLoading(true);
     try {
@@ -273,7 +278,7 @@ async function entryDetail(btn, lineId) {
         const result = await res.json();
         tbody.innerHTML = '';
         if (!result.data || result.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Henüz hareket yok.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Henüz bir hareket kaydı yok.</td></tr>`;
         } else {
             result.data.forEach(item => {
                 const tr = document.createElement('tr');
@@ -281,7 +286,7 @@ async function entryDetail(btn, lineId) {
                     <td>${item.gelis_tarihi}</td>
                     <td>${item.parti_no}</td>
                     <td>${item.top_sayisi}</td>
-                    <td style="font-weight:600;">${formatNumberTR(item.gelen_miktar)}</td>
+                    <td style="font-weight:700;">${formatNumberTR(item.gelen_miktar)}</td>
                     <td>${item.birim || '-'}</td>
                     <td>${item.gelen_en || '-'}</td>
                     <td>${item.gelen_gramaj || '-'}</td>
@@ -289,8 +294,8 @@ async function entryDetail(btn, lineId) {
                     <td>${item.sevk_tarihi || '-'}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="action-btn edit-btn" title="Düzenle" onclick='editEntry(${JSON.stringify(item)})'><i class="fas fa-edit"></i></button>
-                            <button class="action-btn delete-btn" title="Sil" onclick="deleteEntry(${item.row_index}, '${lineId}')"><i class="fas fa-trash"></i></button>
+                            <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(item)})'><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete-btn" onclick="deleteEntry(${item.row_index}, '${lineId}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>`;
                 tbody.appendChild(tr);
@@ -302,7 +307,7 @@ async function entryDetail(btn, lineId) {
 }
 
 // ================================================================
-// FONKSİYONLAR: GİRİŞ, DÜZENLEME, SİLME (WITH AUDIT LOG)
+// FONKSİYONLAR: GİRİŞ, DÜZENLEME, SİLME (AUDIT LOG DESTEKLİ)
 // ================================================================
 
 function entryAdd(lineId) {
@@ -314,7 +319,7 @@ function entryAdd(lineId) {
 
 function closeEntryModal() { document.getElementById('entryModal').classList.add('d-none'); }
 
-// Yeni Kayıt (Oluşturan Bilgisiyle)
+// Yeni Kayıt Kaydetme (Audit: Oluşturan Bilgisi)
 document.getElementById('entryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -328,16 +333,16 @@ document.getElementById('entryForm').addEventListener('submit', async function(e
         gelen_gramaj: document.getElementById('inGelenGramaj').value,
         kullanilabilir_en: document.getElementById('inKullanilabilirEn').value,
         lokasyon: document.getElementById('inLokasyon').value,
-        user_name: user.full_name
+        user_name: user.full_name // Audit için
     };
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_entry", data }) });
         const result = await res.json();
         if (result.success) {
-            Swal.fire('Başarılı', 'Yeni kayıt Audit Log ile kaydedildi.', 'success');
+            Swal.fire('Başarılı', 'Kayıt ve Audit Log oluşturuldu.', 'success');
             closeEntryModal();
-            await selectPlan(document.getElementById('entryPlanInput').value); // Tabloyu tazele
+            await selectPlan(document.getElementById('entryPlanInput').value);
         }
     } finally { toggleLoading(false); }
 });
@@ -369,7 +374,7 @@ function editEntry(item) {
 
 function closeEditEntryModal() { document.getElementById('editEntryModal').classList.add('d-none'); }
 
-// Güncelleme (Düzenleyen Bilgisiyle)
+// Kayıt Güncelleme (Audit: Düzenleyen Bilgisi)
 document.getElementById('editEntryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = JSON.parse(sessionStorage.getItem('user'));
@@ -385,14 +390,14 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
         kullanilabilir_en: document.getElementById('editKullanilabilirEn').value,
         lokasyon: document.getElementById('editLokasyon').value,
         sevk_tarihi: document.getElementById('editSevkTarihi').value,
-        user_name: user.full_name
+        user_name: user.full_name // Audit için
     };
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "update_entry", data }) });
         const result = await res.json();
         if (result.success) {
-            Swal.fire('Güncellendi', 'Düzenleyen bilgisi işlendi.', 'success');
+            Swal.fire('Güncellendi', 'Düzenleme geçmişi veritabanına işlendi.', 'success');
             closeEditEntryModal();
             await selectPlan(document.getElementById('entryPlanInput').value);
             const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
@@ -402,8 +407,14 @@ document.getElementById('editEntryForm').addEventListener('submit', async functi
 });
 
 async function entryClose(lineId) {
-    const { value: text } = await Swal.fire({ title: 'Planı Manuel Kapat', input: 'textarea', inputLabel: 'Kapatma Notu', showCancelButton: true });
-    if (text) {
+    const { value: text } = await Swal.fire({ 
+        title: 'Planı Manuel Kapat', 
+        input: 'textarea', 
+        inputLabel: 'Kapatma Sebebi', 
+        inputPlaceholder: 'İsteğe bağlı not...', 
+        showCancelButton: true 
+    });
+    if (text !== undefined) {
         const user = JSON.parse(sessionStorage.getItem('user'));
         toggleLoading(true);
         try {
@@ -412,7 +423,7 @@ async function entryClose(lineId) {
                 body: JSON.stringify({ action: "close_plan", data: { line_id: lineId, note: text, user_id: user.user_id, user_name: user.full_name } })
             });
             if ((await res.json()).success) {
-                Swal.fire('Kapatıldı', 'Plan manuel kapatıldı.', 'success');
+                Swal.fire('Kapatıldı', 'Plan manuel olarak kapatıldı.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
             }
         } finally { toggleLoading(false); }
@@ -426,7 +437,7 @@ async function entryReopen(lineId) {
         try {
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "reopen_plan", line_id: lineId }) });
             if ((await res.json()).success) {
-                Swal.fire('Geri Açıldı', 'Plan aktif statüde.', 'success');
+                Swal.fire('Geri Açıldı', 'Plan tekrar "Devam Ediyor" statüsünde.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
             }
         } finally { toggleLoading(false); }
@@ -434,13 +445,13 @@ async function entryReopen(lineId) {
 }
 
 async function deleteEntry(rowIdx, lineId) {
-    const confirm = await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true });
+    const confirm = await Swal.fire({ title: 'Emin misiniz?', text: "Bu hareket kalıcı olarak silinecek.", icon: 'warning', showCancelButton: true });
     if (confirm.isConfirmed) {
         toggleLoading(true);
         try {
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete_entry", row_idx: rowIdx }) });
             if ((await res.json()).success) {
-                Swal.fire('Silindi', 'Kayıt silindi.', 'success');
+                Swal.fire('Silindi', 'Kayıt başarıyla silindi.', 'success');
                 await selectPlan(document.getElementById('entryPlanInput').value);
                 const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn.detail-btn`);
                 if(targetBtn) targetBtn.click();
@@ -450,10 +461,14 @@ async function deleteEntry(rowIdx, lineId) {
 }
 
 function clearSelectedRows() { document.querySelectorAll('#entryMasterTbody tr').forEach(r => r.classList.remove('row-selected')); }
-function resetEntryDetail() { document.getElementById('entryDetailCard').classList.add('d-none'); document.getElementById('entryDetailHint').classList.remove('d-none'); clearSelectedRows(); }
+function resetEntryDetail() { 
+    document.getElementById('entryDetailCard').classList.add('d-none'); 
+    document.getElementById('entryDetailHint').classList.remove('d-none'); 
+    clearSelectedRows(); 
+}
 
 // ================================================================
-// 2. KULLANICI YÖNETİMİ & KATALOG
+// 2. KULLANICI YÖNETİMİ & KATALOG (STABİL)
 // ================================================================
 
 async function fetchUsers() {
@@ -482,7 +497,7 @@ document.getElementById('userForm').addEventListener('submit', async function(e)
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "save_user", data }) });
-        if ((await res.json()).success) { Swal.fire('Başarılı', 'Kayıt tamam.', 'success'); closeUserModal(); fetchUsers(); }
+        if ((await res.json()).success) { Swal.fire('Başarılı', 'Kullanıcı başarıyla kaydedildi.', 'success'); closeUserModal(); fetchUsers(); }
     } finally { toggleLoading(false); }
 });
 
@@ -518,7 +533,7 @@ function renderFabrics() {
     tbody.innerHTML = '';
     const start = (currentPage - 1) * rowsPerPage;
     const items = filteredFabrics.slice(start, start + rowsPerPage);
-    if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="5">Kayıt yok.</td></tr>`; } 
+    if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="5">Kayıt bulunamadı.</td></tr>`; } 
     else { items.forEach(f => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${f.code}</td><td>${f.name}</td><td>${f.width}</td><td>${f.gsm}</td><td>${f.unit}</td>`; tbody.appendChild(tr); }); }
     document.getElementById('totalFabricsBadge').textContent = `Toplam: ${filteredFabrics.length}`;
     renderPagination();
@@ -535,7 +550,7 @@ function handleFileUpload(input) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async function(e) {
-        Swal.fire('Bilgi', 'ERP Yükleme başlatıldı.', 'info');
+        Swal.fire('Bilgi', 'ERP Verisi yükleme işlemi başlatıldı.', 'info');
     };
     reader.readAsText(file);
 }
