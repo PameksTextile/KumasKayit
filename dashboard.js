@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı
+ * dashboard.js - Frontend Uygulama Mantığı (Tam ve İşlevsel Sürüm)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -174,9 +174,9 @@ function renderEntryMaster(rows) {
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
-                    <button class="action-btn" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
-                    <button class="action-btn" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
+                    <button class="action-btn" title="Giriş Yap" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
+                    <button class="action-btn" title="Planı Kapat" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
+                    <button class="action-btn" title="Detaylar" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
                 </div>
             </td>`;
         tbody.appendChild(tr);
@@ -193,14 +193,7 @@ async function entryDetail(btn, lineId) {
     document.getElementById('entryDetailHint').classList.add('d-none');
     const card = document.getElementById('entryDetailCard');
     const tbody = document.getElementById('entryDetailTbody');
-    const thead = card.querySelector('thead tr');
-
-    // Başlıkları dinamik güncelle
-    thead.innerHTML = `
-        <th>Geliş Tarihi</th><th>Parti No</th><th>Top</th><th>Miktar</th>
-        <th>En</th><th>Gramaj</th><th>Lokasyon</th><th>Sevk T.</th><th>İşlem</th>
-    `;
-
+    
     card.classList.remove('d-none');
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Yükleniyor...</td></tr>`;
 
@@ -238,6 +231,125 @@ async function entryDetail(btn, lineId) {
     }
 }
 
+/**
+ * Yeni Kumaş Giriş Kaydı
+ */
+async function entryAdd(lineId) {
+    const { value: formValues } = await Swal.fire({
+        title: 'Yeni Kumaş Girişi',
+        html:
+            '<input id="swal-parti" class="swal2-input" placeholder="Parti No">' +
+            '<input id="swal-top" type="number" class="swal2-input" placeholder="Top Sayısı">' +
+            '<input id="swal-miktar" type="number" step="0.01" class="swal2-input" placeholder="Miktar">' +
+            '<input id="swal-en" type="number" class="swal2-input" placeholder="Gelen En (cm)">' +
+            '<input id="swal-gramaj" type="number" class="swal2-input" placeholder="Gelen Gramaj (gr/m²)">',
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        preConfirm: () => {
+            return {
+                parti_no: document.getElementById('swal-parti').value,
+                top_sayisi: document.getElementById('swal-top').value,
+                gelen_miktar: document.getElementById('swal-miktar').value,
+                gelen_en: document.getElementById('swal-en').value,
+                gelen_gramaj: document.getElementById('swal-gramaj').value
+            }
+        }
+    });
+
+    if (formValues) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "save_fabric_entry", line_id: lineId, data: formValues })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Başarılı', 'Kayıt eklendi.', 'success');
+                onEntryPlanChange();
+            }
+        } finally {
+            toggleLoading(false);
+        }
+    }
+}
+
+/**
+ * Mevcut Hareketi Düzenle
+ */
+async function editEntry(item) {
+    const { value: formValues } = await Swal.fire({
+        title: 'Kaydı Düzenle',
+        html:
+            `<input id="swal-parti" class="swal2-input" placeholder="Parti No" value="${item.parti_no}">` +
+            `<input id="swal-top" type="number" class="swal2-input" placeholder="Top Sayısı" value="${item.top_sayisi}">` +
+            `<input id="swal-miktar" type="number" step="0.01" class="swal2-input" placeholder="Miktar" value="${item.gelen_miktar}">` +
+            `<input id="swal-en" type="number" class="swal2-input" placeholder="Gelen En (cm)" value="${item.gelen_en}">` +
+            `<input id="swal-gramaj" type="number" class="swal2-input" placeholder="Gelen Gramaj (gr/m²)" value="${item.gelen_gramaj}">`,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Güncelle',
+        preConfirm: () => {
+            return {
+                row_idx: item.row_index,
+                parti_no: document.getElementById('swal-parti').value,
+                top_sayisi: document.getElementById('swal-top').value,
+                gelen_miktar: document.getElementById('swal-miktar').value,
+                gelen_en: document.getElementById('swal-en').value,
+                gelen_gramaj: document.getElementById('swal-gramaj').value
+            }
+        }
+    });
+
+    if (formValues) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "update_fabric_entry", data: formValues })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Güncellendi', 'Değişiklikler kaydedildi.', 'success');
+                onEntryPlanChange();
+            }
+        } finally {
+            toggleLoading(false);
+        }
+    }
+}
+
+/**
+ * Planı Kapat (Manuel Kapatma)
+ */
+async function entryClose(lineId) {
+    const confirm = await Swal.fire({
+        title: 'Plan Kapatılsın mı?',
+        text: "Bu işlem miktar dolmasa bile durumu 'Tamamlandı' yapacaktır.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Kapat'
+    });
+
+    if (confirm.isConfirmed) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "close_plan", line_id: lineId })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Kapatıldı', 'Plan durumu güncellendi.', 'success');
+                onEntryPlanChange();
+            }
+        } finally {
+            toggleLoading(false);
+        }
+    }
+}
+
 async function deleteEntry(rowIdx, lineId) {
     const confirm = await Swal.fire({ title: 'Emin misiniz?', text: "Bu giriş kaydı silinecek!", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'İptal' });
     if (confirm.isConfirmed) {
@@ -247,7 +359,7 @@ async function deleteEntry(rowIdx, lineId) {
             const result = await res.json();
             if (result.success) {
                 Swal.fire('Silindi', 'Kayıt başarıyla silindi.', 'success');
-                onEntryPlanChange(); // Üst tabloyu tazele
+                onEntryPlanChange();
             }
         } finally {
             toggleLoading(false);
@@ -259,7 +371,7 @@ function clearSelectedRows() { document.querySelectorAll('#entryMasterTbody tr')
 function resetEntryDetail() { document.getElementById('entryDetailCard').classList.add('d-none'); document.getElementById('entryDetailHint').classList.remove('d-none'); clearSelectedRows(); }
 
 // ================================================================
-// 2. BÖLÜM: KULLANICI YÖNETİMİ
+// 2. BÖLÜM: KULLANICI YÖNETİMİ (Mevcut kodun korunmuştur)
 // ================================================================
 
 async function fetchUsers() {
@@ -340,7 +452,7 @@ async function deleteUser(id) {
 }
 
 // ================================================================
-// 3. BÖLÜM: KUMAŞ KATALOĞU
+// 3. BÖLÜM: KUMAŞ KATALOĞU (Mevcut kodun korunmuştur)
 // ================================================================
 
 async function loadFabrics() {
@@ -397,16 +509,4 @@ function renderPagination() {
 function formatNumberTR(n) {
     if (n === null || n === undefined) return "0,00";
     return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function editEntry(item) {
-    Swal.fire('Bilgi', 'Düzenleme modalı bir sonraki adımda eklenecek.', 'info');
-}
-
-function entryAdd(id) {
-    Swal.fire('Bilgi', 'Yeni kumaş giriş formu bir sonraki adımda eklenecek.', 'info');
-}
-
-function entryClose(id) {
-    Swal.fire('Bilgi', 'Manuel kapatma sistemi bir sonraki adımda eklenecek.', 'info');
 }
