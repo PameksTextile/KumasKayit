@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwx-iT9tSuEXx3-A0yCes3YLpWyblUMYjVzW31slyO_BEFTDZqeQTftIKI37RuLsT3-XA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
 
 let allFabrics = [], filteredFabrics = [], currentPage = 1, rowsPerPage = 50;
 let entryCustomersLoaded = false;
