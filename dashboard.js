@@ -1,5 +1,5 @@
 /**
- * dashboard.js - Frontend Uygulama Mantığı (Tam ve Güncellenmiş Sürüm)
+ * dashboard.js - Frontend Uygulama Mantığı (Düzenleme ve Silme Entegre Edilmiş Tam Sürüm)
  */
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
@@ -179,9 +179,7 @@ function renderEntryMaster(rows) {
             <td><span class="status-badge ${statusClr}">${r.status}</span></td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn" onclick="entryAdd('${r.line_id}')"><i class="fas fa-plus"></i></button>
-                    <button class="action-btn" onclick="entryClose('${r.line_id}')"><i class="fas fa-check"></i></button>
-                    <button class="action-btn" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i></button>
+                    <button class="action-btn" onclick="entryDetail(this,'${r.line_id}')"><i class="fas fa-list"></i> Detay</button>
                 </div>
             </td>`;
         tbody.appendChild(tr);
@@ -189,7 +187,7 @@ function renderEntryMaster(rows) {
 }
 
 /**
- * DETAY TABLOSU (Sütun Kayması Düzeltilmiş Sürüm)
+ * DETAY TABLOSU (Düzenleme ve Silme Entegre Edilmiş)
  */
 async function entryDetail(btn, lineId) {
     clearSelectedRows();
@@ -200,7 +198,7 @@ async function entryDetail(btn, lineId) {
     const tbody = document.getElementById('entryDetailTbody');
     
     card.classList.remove('d-none');
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Yükleniyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Yükleniyor...</td></tr>`;
 
     toggleLoading(true);
 
@@ -213,11 +211,10 @@ async function entryDetail(btn, lineId) {
         tbody.innerHTML = '';
 
         if (!result.data || result.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Henüz hareket kaydı yok.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Henüz hareket kaydı yok.</td></tr>`;
         } else {
             result.data.forEach(item => {
                 const tr = document.createElement('tr');
-
                 tr.innerHTML = `
                     <td>${item.gelis_tarihi}</td>
                     <td>${item.parti_no}</td>
@@ -234,13 +231,108 @@ async function entryDetail(btn, lineId) {
                             <button class="action-btn delete-btn" onclick="deleteEntry(${item.row_index}, '${lineId}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>`;
-
                 tbody.appendChild(tr);
             });
         }
     } finally {
         toggleLoading(false);
     }
+}
+
+// ================================================================
+// YENİ: DÜZENLEME VE SİLME FONKSİYONLARI
+// ================================================================
+
+async function deleteEntry(rowIdx, lineId) {
+    const confirm = await Swal.fire({
+        title: 'Emin misiniz?',
+        text: "Bu hareket kaydı silinecek ve toplamlar yeniden hesaplanacaktır!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'Vazgeç'
+    });
+
+    if (confirm.isConfirmed) {
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "delete_entry", row_idx: rowIdx })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Silindi', 'Kayıt silindi ve plan güncellendi.', 'success');
+                await onEntryPlanChange(); // Üst tabloyu tazele
+                // Detayı tekrar yükle
+                const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn`);
+                if(targetBtn) targetBtn.click();
+            }
+        } finally {
+            toggleLoading(false);
+        }
+    }
+}
+
+function editEntry(item) {
+    document.getElementById('editRowIndex').value = item.row_index;
+    document.getElementById('editLineId').value = document.querySelector('.row-selected').dataset.lineId;
+    
+    if(item.gelis_tarihi && item.gelis_tarihi !== "-") {
+        const parts = item.gelis_tarihi.split('.');
+        document.getElementById('editGelisTarihi').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    document.getElementById('editPartiNo').value = item.parti_no === "-" ? "" : item.parti_no;
+    document.getElementById('editTopSayisi').value = item.top_sayisi;
+    document.getElementById('editGelenMiktar').value = item.gelen_miktar;
+    document.getElementById('editGelenEn').value = item.gelen_en === "-" ? "" : item.gelen_en;
+    document.getElementById('editGelenGramaj').value = item.gelen_gramaj === "-" ? "" : item.gelen_gramaj;
+    document.getElementById('editKullanilabilirEn').value = item.kullanilabilir_en === "-" ? "" : item.kullanilabilir_en;
+
+    document.getElementById('editEntryModal').classList.remove('d-none');
+}
+
+function closeEditEntryModal() {
+    document.getElementById('editEntryModal').classList.add('d-none');
+}
+
+// Düzenleme Formu Listener
+const editForm = document.getElementById('editEntryForm');
+if(editForm) {
+    editForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const lineId = document.getElementById('editLineId').value;
+        const data = {
+            row_index: document.getElementById('editRowIndex').value,
+            gelis_tarihi: document.getElementById('editGelisTarihi').value,
+            parti_no: document.getElementById('editPartiNo').value,
+            top_sayisi: document.getElementById('editTopSayisi').value,
+            gelen_miktar: document.getElementById('editGelenMiktar').value,
+            gelen_en: document.getElementById('editGelenEn').value,
+            gelen_gramaj: document.getElementById('editGelenGramaj').value,
+            kullanilabilir_en: document.getElementById('editKullanilabilirEn').value
+        };
+
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "update_entry", data })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Güncellendi', 'Kayıt ve plan özeti güncellendi.', 'success');
+                closeEditEntryModal();
+                await onEntryPlanChange();
+                const targetBtn = document.querySelector(`tr[data-line-id="${lineId}"] .action-btn`);
+                if(targetBtn) targetBtn.click();
+            }
+        } finally {
+            toggleLoading(false);
+        }
+    });
 }
 
 function clearSelectedRows() {
@@ -309,45 +401,39 @@ function closeUserModal() {
     document.getElementById('userModal').classList.add('d-none');
 }
 
-document.getElementById('userForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const data = {
-        user_id: document.getElementById('inputUserId').value || null,
-        full_name: document.getElementById('inputFullName').value,
-        username: document.getElementById('inputUsername').value,
-        password: document.getElementById('inputPassword').value,
-        mail: document.getElementById('inputMail').value,
-        role: document.getElementById('inputRole').value,
-        status: document.getElementById('inputStatus').value
-    };
-
-    toggleLoading(true);
-
-    try {
-        const res = await fetch(API_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "save_user", data })
-        });
-        const result = await res.json();
-        if (result.success) {
-            Swal.fire('Başarılı', result.message, 'success');
-            closeUserModal();
-            fetchUsers();
+const userForm = document.getElementById('userForm');
+if(userForm) {
+    userForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = {
+            user_id: document.getElementById('inputUserId').value || null,
+            full_name: document.getElementById('inputFullName').value,
+            username: document.getElementById('inputUsername').value,
+            password: document.getElementById('inputPassword').value,
+            mail: document.getElementById('inputMail').value,
+            role: document.getElementById('inputRole').value,
+            status: document.getElementById('inputStatus').value
+        };
+        toggleLoading(true);
+        try {
+            const res = await fetch(API_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "save_user", data })
+            });
+            const result = await res.json();
+            if (result.success) {
+                Swal.fire('Başarılı', result.message, 'success');
+                closeUserModal();
+                fetchUsers();
+            }
+        } finally {
+            toggleLoading(false);
         }
-    } finally {
-        toggleLoading(false);
-    }
-});
+    });
+}
 
 async function deleteUser(id) {
-    const c = await Swal.fire({ 
-        title: 'Emin misiniz?', 
-        text: 'Kullanıcı silindi olarak işaretlenecek.', 
-        icon: 'warning', 
-        showCancelButton: true 
-    });
-
+    const c = await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true });
     if (c.isConfirmed) {
         toggleLoading(true);
         await fetch(API_URL, { 
@@ -360,7 +446,7 @@ async function deleteUser(id) {
 }
 
 // ================================================================
-// 3. KUMAŞ KATALOĞU
+// 3. KUMAŞ KATALOĞU ve ERP YÜKLEME
 // ================================================================
 
 async function loadFabrics() {
@@ -382,8 +468,7 @@ async function loadFabrics() {
 function filterFabrics() {
     const q = document.getElementById('fabricSearch').value.toLowerCase().trim();
     filteredFabrics = allFabrics.filter(f => 
-        f.code.toLowerCase().includes(q) || 
-        f.name.toLowerCase().includes(q)
+        f.code.toLowerCase().includes(q) || f.name.toLowerCase().includes(q)
     );
     currentPage = 1;
     renderFabrics();
@@ -392,25 +477,17 @@ function filterFabrics() {
 function renderFabrics() {
     const tbody = document.getElementById('fabricTableBody');
     tbody.innerHTML = '';
-
     const start = (currentPage - 1) * rowsPerPage;
     const items = filteredFabrics.slice(start, start + rowsPerPage);
-
     if (items.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5">Kayıt bulunamadı.</td></tr>`;
     } else {
         items.forEach(f => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${f.code}</td>
-                <td>${f.name}</td>
-                <td>${f.width}</td>
-                <td>${f.gsm}</td>
-                <td>${f.unit}</td>`;
+            tr.innerHTML = `<td>${f.code}</td><td>${f.name}</td><td>${f.width}</td><td>${f.gsm}</td><td>${f.unit}</td>`;
             tbody.appendChild(tr);
         });
     }
-
     document.getElementById('totalFabricsBadge').textContent = `Toplam: ${filteredFabrics.length}`;
     renderPagination();
 }
@@ -418,7 +495,6 @@ function renderFabrics() {
 function renderPagination() {
     const container = document.getElementById('pagination');
     const totalPages = Math.ceil(filteredFabrics.length / rowsPerPage) || 1;
-
     container.innerHTML = `
         <button class="btn-secondary" ${currentPage === 1 ? 'disabled' : ''} onclick="currentPage--; renderFabrics();">Geri</button>
         <span class="badge">${currentPage} / ${totalPages}</span>
@@ -426,13 +502,29 @@ function renderPagination() {
     `;
 }
 
+/**
+ * ERP TXT YÜKLEME (Senin çalışan mantığın buraya gelecek)
+ */
+function handleFileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const text = e.target.result;
+        // Burada TXT ayrıştırma mantığın yer alıyor...
+        // Örnek akış:
+        // const parsedData = txtToJson(text); 
+        // await syncFabrics(parsedData);
+        Swal.fire('Bilgi', 'ERP Yükleme fonksiyonun tetiklendi.', 'info');
+    };
+    reader.readAsText(file);
+}
+
 // ================================================================
 // YARDIMCI ARAÇLAR
 // ================================================================
 function formatNumberTR(n) {
     if (n === null || n === undefined) return "0,00";
-    return Number(n).toLocaleString('tr-TR', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-    });
+    return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
