@@ -1,5 +1,4 @@
-// ÖNEMLİ: Yeni dağıtım sonrası aldığınız URL'yi buraya yapıştırın
-const API_URL = "https://script.google.com/macros/s/AKfycbwx-iT9tSuEXx3-A0yCes3YLpWyblUMYjVzW31slyO_BEFTDZqeQTftIKI37RuLsT3-XA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwlswF2jfmFR54VdKUE8wsuf58vaK-R-Hekqsaednn6fjmdBWaXJRr6UfGvf3zPSf32Cw/exec";
 const loginForm = document.getElementById('loginForm');
 const loadingOverlay = document.getElementById('loadingOverlay');
 
@@ -13,25 +12,23 @@ if (loginForm) {
         toggleLoading(true);
 
         try {
-            // Google Apps Script için optimize edilmiş fetch isteği
             const response = await fetch(API_URL, {
                 method: "POST",
-                mode: "cors", // Tarayıcıya bunun bir CORS isteği olduğunu belirtir
+                mode: "cors",
                 headers: {
-                    // Google Apps Script bazen application/json başlığında 'preflight' (ön denetim) hatası verebilir. 
-                    // text/plain kullanımı bu engeli aşmanın en stabil yoludur.
-                    "Content-Type": "text/plain;charset=utf-8" 
+                    // Önemli: application/json yerine text/plain CORS sorunlarını azaltır
+                    "Content-Type": "text/plain;charset=utf-8"
                 },
                 body: JSON.stringify({ 
                     action: "login", 
                     username: username, 
                     password: password 
                 }),
-                redirect: "follow" // Google'ın 302 yönlendirmesini takip etmesi için şarttır
+                redirect: "follow"
             });
 
             if (!response.ok) {
-                throw new Error("Ağ yanıtı uygun değil: " + response.statusText);
+                throw new Error("Sunucu yanıt vermedi: " + response.statusText);
             }
 
             const result = await response.json();
@@ -58,7 +55,7 @@ if (loginForm) {
             Swal.fire({ 
                 icon: 'error', 
                 title: 'Bağlantı Hatası', 
-                text: 'Sunucuya erişilemedi veya CORS engeline takıldı. Lütfen dağıtım ayarlarını kontrol edin.' 
+                text: 'Uygulama sunucuya erişemiyor. Lütfen internet bağlantınızı ve script erişim yetkilerini kontrol edin.' 
             });
         }
     });
